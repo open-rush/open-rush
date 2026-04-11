@@ -122,15 +122,19 @@ Control Worker
 
 - [ ] OpenSandbox PoC
 - [ ] Monorepo skeleton (pnpm, turborepo, biome, vitest, tsup)
-- [ ] CI: GitHub Actions
-- [ ] Docker Compose (PostgreSQL + Redis + OpenSandbox + MinIO)
+- [ ] CI: GitHub Actions + Dependabot
+- [ ] Docker Compose (PostgreSQL + Redis + OpenSandbox + MinIO) — one-click dev env
+- [ ] Open source governance (SECURITY.md, CONTRIBUTING, CODEOWNERS, issue/PR templates)
 - [ ] `packages/contracts` — Zod schemas
-- [ ] `packages/db` — Drizzle schema (see below)
-- [ ] `packages/stream` — Redis resumable SSE
+- [ ] `packages/db` — Drizzle schema + migration policy (up/down, rollback, CI gate)
+- [ ] `packages/stream` — Redis resumable SSE + idempotency protocol (dedup, sequence, gap detection)
 - [ ] `packages/control-plane` — RunService, EventStore, FinalizationStateMachine
 - [ ] `apps/control-worker` — pg-boss consumer + state machine
-- [ ] `packages/sandbox` — SandboxProvider + OpenSandboxProvider
-- [ ] Env var config + standard OTEL
+- [ ] `packages/sandbox` — SandboxProvider (with allocator abstraction for future pooling) + OpenSandboxProvider
+- [ ] Credential Proxy — sidecar auth proxy
+- [ ] Minimal observability — request_id propagation + structured JSON logging (pino)
+- [ ] Security baseline — STRIDE threat model + hardening checklist
+- [ ] Env var config + standard OTEL base
 
 **Tests:** ~400
 
@@ -145,24 +149,34 @@ Control Worker
 - [ ] `apps/web` — Next.js 16 + React 19 + Tailwind 4 + shadcn/ui
 - [ ] Auth — NextAuth.js v5 (GitHub OAuth)
 - [ ] SSE② endpoint
+- [ ] Minimal credential layer — encrypted storage + scoped injection (before full Vault)
+- [ ] Minimal RBAC — Owner/Member roles + unified auth guard across 3 layers
+- [ ] AI Provider resilience — fallback chain, budget limit, timeout, rate control
 
 **Tests:** ~1,500
 
-### Phase 2: Product Core — MVP (Week 6-9)
+### Phase 2a: MVP Core Loop (Week 6-9)
 
-- [ ] Project management (CRUD, templates, members, trash)
+- [ ] Project management (CRUD, members, trash)
 - [ ] Conversation system (messages, title generation)
 - [ ] File management (S3-compatible)
 - [ ] Preview & Dev Server (Vite, HMR, screenshots)
 - [ ] Version management (history, publish, rollback)
 - [ ] Deployment (S3 + CDN)
-- [ ] `packages/ai-components` — 64 React components
-- [ ] Template system
-- [ ] Permission model (project_members + roles + auth guard)
+- [ ] Permission model enforcement
 
-**Tests:** ~3,000. **Public repo after this phase.**
+**Tests:** ~2,500. **Public repo after this phase.**
 
-### Phase 3: Ecosystem (Week 10-13)
+### Phase 2b: Experience Enhancement (Week 10-11)
+
+- [ ] `packages/ai-components` — 64 React AI components
+- [ ] Vault — full credential management + type-based injection strategy
+- [ ] Template system — template registry + scaffolding
+- [ ] Extension API v1 contract (for Skills/MCP plugin ecosystem)
+
+**Tests:** ~3,500
+
+### Phase 3: Ecosystem (Week 12-15)
 
 - [ ] `packages/skills` — runtime, discovery, permissions
 - [ ] `packages/mcp` — registry, lifecycle, probe, config
@@ -170,20 +184,21 @@ Control Worker
 - [ ] Agent config system
 - [ ] Admin panel
 
-**Tests:** ~4,000
+**Tests:** ~4,500
 
-### Phase 4: Polish & Scale (Week 14-16)
+### Phase 4: GA (Week 16-18)
 
-- [ ] Observability (standard OTEL)
+- [ ] Enhanced observability — full OTEL spans + metrics + cost dashboard
 - [ ] LLM Tracing
 - [ ] Rate limiting (Redis)
-- [ ] RBAC enhancement
-- [ ] i18n (zh/en)
+- [ ] RBAC enhancement (fine-grained roles, audit logs)
 - [ ] Documentation site
 - [ ] E2E tests (Playwright)
-- [ ] BatchSandbox resource pools + auto-reclaim
+- [ ] BatchSandbox resource pools + auto-reclaim (swap into existing SandboxAllocator)
 
 **Tests:** ~5,000+
+
+**i18n deferred** — tracked separately, not blocking GA.
 
 ---
 
@@ -243,11 +258,12 @@ platform_tokens  hashed, expirable
 
 | Milestone | Week | Tests | Gate |
 |-----------|------|-------|------|
-| M0: Skeleton | 2 | ~400 | `pnpm build && pnpm test` green |
-| M1: Agent Loop | 5 | ~1,500 | prompt → sandbox → browser streaming |
-| M2: MVP | 9 | ~3,000 | create → chat → code → preview → deploy |
-| M3: Ecosystem | 13 | ~4,000 | skills + MCP + memory working |
-| M4: GA | 16 | ~5,000+ | OTEL + RBAC + docs + E2E |
+| M0: Skeleton | 2 | ~400 | `pnpm build && pnpm test` green, security baseline documented |
+| M1: Agent Loop | 5 | ~1,500 | prompt → sandbox → browser streaming, credentials encrypted |
+| M2a: MVP Core | 9 | ~2,500 | create → chat → code → preview → deploy. **Public repo** |
+| M2b: Experience | 11 | ~3,500 | 64 components + Vault + templates + extension API v1 |
+| M3: Ecosystem | 15 | ~4,500 | skills + MCP + memory working |
+| M4: GA | 18 | ~5,000+ | OTEL enhanced + RBAC + docs + E2E + BatchSandbox |
 
 ---
 
@@ -256,6 +272,9 @@ platform_tokens  hashed, expirable
 | Risk | Mitigation |
 |------|-----------|
 | OpenSandbox PoC fails | SandboxProvider interface; write Docker/E2B adapter |
-| Timeline too aggressive | Phase 2 is hard deadline; 3/4 can slip |
+| Timeline too aggressive | M2a is hard deadline; M2b/3/4 can slip |
 | Test coverage ambitious | Incremental targets per milestone; prioritize critical paths |
 | Pause/Resume state loss | Checkpoint mechanism + recovery protocol |
+| Stream duplicate/out-of-order | Idempotency key + sequence protocol from M0 |
+| AI provider outage / cost spike | Fallback chain + budget limit + timeout from M1 |
+| Credential leakage via prompt injection | Credential Proxy (M0) + Vault (M2b) + output sanitizer + network egress deny |
