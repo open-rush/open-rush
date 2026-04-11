@@ -2,13 +2,16 @@
 
 ## Vision
 
-Build a fully open-source AI web builder with a clean three-layer architecture.
+Build a fully open-source AI agent platform powered by Claude Code, running in sandboxed containers.
+
+Not just a web builder — Rush is a general-purpose AI development platform: build apps, automate workflows, execute code, manage projects, all through conversation.
 
 **Core Principles:**
 - Zero proprietary dependencies — all standard open-source libraries
 - Clean-slate schema design (Drizzle ORM), no legacy migration
 - Three-layer architecture: Web → Control Worker → Agent Worker (sandboxed)
-- Full product capabilities: conversational web building, preview, deployment, Skills/MCP, Memory
+- Full platform capabilities: conversational development, live preview, deployment, Skills/MCP, Memory, multi-tenant
+- Claude Code native — single agent runtime, three connection modes
 - Test-driven: all tests written from scratch for this project
 - Pluggable sandbox: OpenSandbox default, bring your own
 
