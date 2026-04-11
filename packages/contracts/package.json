@@ -1,0 +1,28 @@
+{
+  "name": "@rush/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "check": "tsc --noEmit",
+    "lint": "biome check .",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist node_modules coverage"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.0.0"
+  }
+}

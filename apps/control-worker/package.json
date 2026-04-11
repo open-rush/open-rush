@@ -1,0 +1,30 @@
+{
+  "name": "@rush/control-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/worker.ts --format esm --dts",
+    "dev": "tsx watch src/worker.ts",
+    "start": "node dist/worker.js",
+    "check": "tsc --noEmit",
+    "lint": "biome check .",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist node_modules coverage"
+  },
+  "dependencies": {
+    "@rush/contracts": "workspace:*",
+    "@rush/control-plane": "workspace:*",
+    "@rush/db": "workspace:*",
+    "@rush/sandbox": "workspace:*",
+    "@rush/stream": "workspace:*",
+    "pg-boss": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.0.0"
+  }
+}

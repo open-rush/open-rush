@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+.next/
+out/
+
+# turbo
+.turbo/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db
+
+# test
+coverage/
+test-results/
+
+# misc
+*.tsbuildinfo
+*.log
