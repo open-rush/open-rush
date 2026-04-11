@@ -1,53 +1,73 @@
 # Rush
 
-Open-source AI agent platform — powered by Claude Code, running in sandboxed containers.
+Enterprise AI agent infrastructure — self-hosted, multi-scenario, built for every team member.
 
-Build web apps, automate workflows, execute code, manage projects — all through conversation with an AI agent that has full access to a real development environment.
+Deploy once, empower everyone. Developers automate with CLI and API. Non-technical teams build apps, analyze data, and generate content through conversation. All running on sandboxed Claude Code agents in your own infrastructure.
 
 ## Status
 
 **Pre-alpha** — actively under development. See [Roadmap](docs/roadmap.md) for the full plan.
 
-## What Rush Does
+## Vision
 
-- **Conversational development** — Chat with Claude Code to build, debug, and deploy software
-- **Sandboxed execution** — Every project runs in an isolated container with its own filesystem, dev server, and tools
-- **Live preview** — See changes in real-time as the agent writes code
-- **Version management** — Track, publish, and rollback project versions
-- **Skills & MCP** — Extend agent capabilities with a plugin marketplace and Model Context Protocol servers
-- **Memory** — Agent learns your preferences across sessions
-- **Multi-tenant** — Per-user projects, credentials, and permissions
+```
+Entry Points (multi-entry)                    Scenarios (multi-scenario)
+┌─────────────────────┐                       ┌─────────────────────┐
+│ Web UI    — everyone │                       │ Web app building    │
+│ CLI       — devs     │──── Rush Platform ───►│ Code generation     │
+│ API       — systems  │                       │ Data analysis       │
+│ SDK       — embed    │                       │ Workflow automation  │
+└─────────────────────┘                       │ Document generation  │
+                                              │ Multimodal tasks     │
+                                              └─────────────────────┘
+```
+
+## Current Scope
+
+The initial release (M0–M4) focuses on the **platform layer + web app building + Web UI entry**. CLI, API, SDK, and additional scenarios are planned for subsequent releases.
 
 ## Architecture
 
 Three-layer design with pluggable sandbox isolation:
 
 ```
-Browser
+Browser / CLI / API
   │
-  │  SSE (streaming UI)
+  │  SSE (streaming)
   ▼
-apps/web (Next.js 16)          — User Portal + Control API
+apps/web (Next.js 16)          — Portal + Control API
   │
   │  pg-boss queue
   ▼
-apps/control-worker             — Orchestration engine + state machine
+apps/control-worker             — Orchestration + state machine
   │
   │  SandboxProvider interface
   ▼
 Sandbox Container
   ├── apps/agent-worker (Hono)  — Claude Code agent execution
-  ├── Workspace files            — Project source code
-  └── Dev server                 — Live preview
+  ├── Workspace files
+  └── Dev server
 ```
+
+## Platform Capabilities
+
+| Capability | Description |
+|-----------|-------------|
+| **Agent orchestration** | Conversation, task dispatch, 15-state machine, checkpoint recovery |
+| **Sandbox isolation** | Per-task containers, pluggable runtime (OpenSandbox, E2B, Docker...) |
+| **Skills & MCP** | Plugin marketplace + Model Context Protocol servers |
+| **Memory** | Cross-session learning, user preferences, pgvector search |
+| **Vault** | Dual-layer credential management (platform + user), auto-routed injection |
+| **Multi-tenant** | Per-user projects, RBAC, isolated workspaces |
+| **Observability** | OpenTelemetry traces + metrics + LLM cost tracking |
 
 ## Key Design Decisions
 
-- **Pluggable sandbox** — `SandboxProvider` interface decouples orchestration from container runtime. Bring your own: OpenSandbox, E2B, Docker, Fly.io, etc.
-- **Vault-based credential management** — Platform Vault (admin-managed, invisible to users) + User Vault (self-service). Credentials auto-routed through Credential Proxy or controlled injection based on type
+- **Pluggable sandbox** — `SandboxProvider` interface. Bring your own container runtime
+- **Dual-layer Vault** — Platform Vault (admin, invisible) + User Vault (self-service). Credentials auto-routed through Credential Proxy or controlled injection
 - **Claude Code native** — Single agent runtime, three connection modes (Anthropic API / Bedrock / custom endpoint)
-- **Zero vendor lock-in** — standard OTEL, NextAuth.js, S3-compatible storage, Drizzle ORM
-- **Spec-driven** — features defined in `specs/` before implementation
+- **Zero vendor lock-in** — Standard OTEL, NextAuth.js, S3-compatible storage, Drizzle ORM
+- **Spec-driven** — Features defined in `specs/` before implementation
 
 ## Tech Stack
 

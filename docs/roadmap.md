@@ -2,18 +2,44 @@
 
 ## Vision
 
-Build a fully open-source AI agent platform powered by Claude Code, running in sandboxed containers.
+Enterprise AI agent infrastructure — self-hosted, multi-scenario, built for every team member.
 
-Not just a web builder — Rush is a general-purpose AI development platform: build apps, automate workflows, execute code, manage projects, all through conversation.
+Rush is a platform that enterprises deploy internally. Once deployed, developers use CLI and API to automate. Non-technical teams build apps, analyze data, and generate content through Web UI. All powered by sandboxed Claude Code agents running in the enterprise's own infrastructure.
 
-**Core Principles:**
+### Full Picture
+
+```
+Entry Points                          Scenarios
+├── Web UI    (everyone)              ├── Web app building
+├── CLI       (developers)            ├── Code generation
+├── API       (system integration)    ├── Data analysis
+└── SDK       (embedded in products)  ├── Workflow automation
+                                      ├── Document / report generation
+                                      └── Multimodal tasks
+
+Platform Layer (this repo)
+├── Agent orchestration    — conversation, state machine, checkpoint
+├── Sandbox isolation      — per-task containers, pluggable runtime
+├── Skills & MCP           — plugin ecosystem
+├── Memory                 — cross-session learning
+├── Vault                  — dual-layer credential management
+├── Multi-tenant           — per-user projects, RBAC
+└── Observability          — OTEL + LLM cost tracking
+```
+
+### Current Scope (M0–M4)
+
+The initial release focuses on: **platform layer + web app building scenario + Web UI entry point**. CLI, API, SDK, and additional scenarios are planned post-GA.
+
+### Core Principles
+
 - Zero proprietary dependencies — all standard open-source libraries
-- Clean-slate schema design (Drizzle ORM), no legacy migration
-- Three-layer architecture: Web → Control Worker → Agent Worker (sandboxed)
-- Full platform capabilities: conversational development, live preview, deployment, Skills/MCP, Memory, multi-tenant
+- Self-hosted — your data stays in your infrastructure
 - Claude Code native — single agent runtime, three connection modes
-- Test-driven: all tests written from scratch for this project
-- Pluggable sandbox: OpenSandbox default, bring your own
+- Pluggable sandbox — OpenSandbox default, bring your own
+- Dual-layer Vault — platform credentials (admin) + user credentials (self-service)
+- Test-driven — all tests written from scratch
+- Spec-driven — features defined in `specs/` before implementation
 
 ---
 
