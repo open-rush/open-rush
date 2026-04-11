@@ -72,7 +72,16 @@ All credentials are managed through Vault. The platform auto-detects connection 
 | Custom endpoint | `custom_endpoint` | Vault → Credential Proxy | No |
 | AWS Bedrock | `aws_bedrock` | Vault → env injection | Yes (SigV4 requires it) |
 
-Users only interact with Vault. Credential Proxy is an internal transport — invisible to users.
+### Two Vault Scopes
+
+| Scope | Managed by | Visible to user | Example |
+|-------|-----------|-----------------|---------|
+| **Platform Vault** | Admin / control plane | No | Bedrock keys, S3 access, internal service tokens |
+| **User Vault** | End user | Yes | Personal GitHub token, custom API keys |
+
+Runtime merge: Platform Vault loads first, User Vault overrides (same `injection_target` → user wins).
+
+Users only interact with User Vault. Platform Vault and Credential Proxy are internal — invisible to users.
 
 ---
 
