@@ -42,7 +42,7 @@ Sandbox Container
 |-------|-----------|
 | Frontend | Next.js 16, React 19, Tailwind 4, shadcn/ui |
 | Backend | Hono (agent), pg-boss (queue), Drizzle ORM |
-| AI | Vercel AI SDK, Claude Code, Codex, Gemini, OpenAI |
+| AI | Claude Code (Anthropic API / Bedrock / custom endpoint) |
 | Database | PostgreSQL 16 + pgvector |
 | Sandbox | Pluggable — any container runtime via SandboxProvider |
 | Cache | Redis (resumable SSE streams) |

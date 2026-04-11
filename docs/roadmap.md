@@ -52,6 +52,26 @@ open-rush/
 
 ---
 
+## Agent Runtime: Claude Code Only
+
+No multi-provider abstraction. Claude Code CLI is the sole agent runtime, configured via environment variables.
+
+### Three Connection Modes
+
+| Mode | Env Vars | Use Case |
+|------|----------|----------|
+| **Anthropic API** | `ANTHROPIC_API_KEY` | Direct Anthropic API |
+| **AWS Bedrock** | `CLAUDE_CODE_USE_BEDROCK=1` + AWS creds + `ANTHROPIC_MODEL=arn:...` | AWS Bedrock with ARN |
+| **Custom endpoint** | `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` | Compatible APIs (e.g. Zhipu GLM) |
+
+The platform auto-detects connection mode from user's Vault credentials and injects the appropriate env vars into the sandbox.
+
+For Anthropic API and custom endpoint modes, the auth token goes through Credential Proxy (never enters the container). For Bedrock, AWS credentials must be in the container env (SigV4 requirement), protected by defense-in-depth.
+
+Reference: https://docs.bigmodel.cn/cn/coding-plan/tool/claude
+
+---
+
 ## Sandbox: OpenSandbox
 
 ### Architecture
@@ -140,7 +160,7 @@ Control Worker
 
 ### Phase 1: AI Core (Week 3-5)
 
-- [ ] `packages/agent-runtime` — AIProvider + Claude/Codex/Gemini/OpenAI
+- [ ] `packages/agent-runtime` — Claude Code provider (Anthropic API / Bedrock / custom endpoint)
 - [ ] `apps/agent-worker` — Hono + streamText + UIMessageStream
 - [ ] Agent Bridge — SSE① communication
 - [ ] Checkpoint & Recovery
