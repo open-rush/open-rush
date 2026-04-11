@@ -16,7 +16,14 @@
     "format": "biome format --write .",
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=@rush/web",
-    "clean": "turbo clean && rm -rf node_modules"
+    "clean": "turbo clean && rm -rf node_modules",
+    "db:up": "docker compose -f docker/docker-compose.dev.yml up -d --wait",
+    "db:down": "docker compose -f docker/docker-compose.dev.yml down",
+    "db:reset": "docker compose -f docker/docker-compose.dev.yml down -v && pnpm db:up && pnpm db:push",
+    "db:push": "DATABASE_URL=postgresql://rush:rush@localhost:5432/rush pnpm --filter @rush/db db:push",
+    "db:generate": "pnpm --filter @rush/db db:generate",
+    "db:studio": "DATABASE_URL=postgresql://rush:rush@localhost:5432/rush pnpm --filter @rush/db db:studio",
+    "test:integration": "turbo test:integration"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",

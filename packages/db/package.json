@@ -14,15 +14,21 @@
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "check": "tsc --noEmit",
     "lint": "biome check .",
-    "test": "vitest run --passWithNoTests",
-    "clean": "rm -rf dist node_modules coverage"
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "clean": "rm -rf dist node_modules coverage drizzle",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@rush/contracts": "workspace:*",
     "drizzle-orm": "^0.44.0",
     "postgres": "^3.4.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "@types/node": "^22.0.0",
     "drizzle-kit": "^0.30.0",
     "tsup": "^8.0.0",
     "typescript": "^5.8.0",
