@@ -1,57 +1,32 @@
-# Rush Development Guide
+# Rush
 
-## Tech Stack
+完整开发指南见 [AGENTS.md](./AGENTS.md)。以下是快速参考。
 
-- **Runtime**: Node.js 22+, pnpm monorepo, TypeScript strict, ESM
-- **Build**: Turborepo (orchestration), tsup (packages), Next.js (web)
-- **Quality**: Biome (lint + format), Vitest (testing)
-- **Database**: PostgreSQL 16 + pgvector, Drizzle ORM
-- **Queue**: pg-boss
-- **Cache**: Redis (resumable SSE streams)
-- **Web**: Next.js 16, React 19
-- **Agent**: Hono (agent-worker HTTP server), Claude Code
-- **Auth**: NextAuth.js v5
-- **Observability**: OpenTelemetry
-
-## Architecture
-
-Three-layer design:
-
-1. **apps/web** — Next.js frontend + control API + SSE endpoints
-2. **apps/control-worker** — pg-boss job processor, RunStateMachine, agent bridge
-3. **apps/agent-worker** — Hono server running inside sandbox, wraps Claude Code
-
-Shared packages under `packages/`:
-- **contracts** — Shared types and Zod schemas
-- **db** — Drizzle ORM schema and migrations
-- **control-plane** — Business logic (runs, projects, users)
-- **sandbox** — SandboxProvider interface + OpenSandbox default
-- **agent-runtime** — Agent execution runtime
-- **stream** — Redis-backed resumable SSE streams
-- **integrations** — External service integrations
-- **ai-components** — AI-powered UI components
-- **skills** — Agent skill system
-- **mcp** — Model Context Protocol server/client
-- **memory** — Cross-session agent memory (pgvector)
-
-## Commands
+## 快速命令
 
 ```bash
-pnpm install          # Install all dependencies
-pnpm build            # Build all packages and apps
-pnpm check            # TypeScript type checking
-pnpm test             # Run all tests
-pnpm lint             # Biome lint
-pnpm format           # Biome format (auto-fix)
-pnpm dev              # Start all dev servers
-pnpm dev:web          # Start web dev server only
+pnpm build && pnpm check && pnpm lint && pnpm test   # 提交前门禁
+pnpm dev                                               # 启动开发服务器
+pnpm db:up                                             # 启动 PG + Redis
+pnpm test:integration                                  # 集成测试（需 Docker）
 ```
 
-## Conventions
+## 架构
 
-- All code is ESM (`"type": "module"`)
-- Packages build with tsup (dual ESM + CJS output)
-- Workspace references use `"workspace:*"`
-- TypeScript strict mode, no `any`
-- Biome enforces formatting and linting — run `pnpm format` before committing
-- Tests use Vitest with workspace-level config
+三层：`apps/web`（Next.js）→ `apps/control-worker`（pg-boss）→ `apps/agent-worker`（Hono，沙箱内）
+
+## 变更流程
+
+- **Small**（无逻辑变更）：改代码 → check/lint/test → 提交
+- **Medium**（有逻辑变更）：读 Spec → 代码+测试 → 更新 Spec → 提交
+- **Large**（新模块/架构）：写 Spec → TDD → 代码+测试 → 提交
+
+每个 commit 必须包含**代码 + 测试**。Spec 在 `specs/` 目录。
+
+## 约定
+
+- TypeScript strict, ESM, 禁止 `any`
+- Biome lint + format，Vitest 测试
+- Packages: tsup 构建，`workspace:*` 引用
+- 状态机: `packages/contracts/src/enums.ts`（15 状态 RunStatus）
+- DB: `packages/db/src/schema/`（13 张表，Drizzle ORM）
