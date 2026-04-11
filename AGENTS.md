@@ -225,45 +225,24 @@ Sparring 是 Claude Code + Cursor Agent 的双 Agent 交叉审查机制：
 
 #### Large（新模块、架构变更、跨多 package）
 ```
-Plan 阶段（整体方案）：
+Plan 阶段：
 1. 写 Plan（实施方案、技术选型、任务拆分）
 2. Sparring review Plan
-3. 修复 Plan 中的问题，与用户确认
+3. 与用户确认
 
-Spec 阶段（逐个模块的行为契约）：
-4. 从 Plan 拆出 Spec（一个 Plan 可能对应多个 Spec）
-5. 逐个 Sparring review Spec
-6. 修复 Spec 中的问题
+Spec 阶段（如果涉及方向性设计决策）：
+4. 写/更新 Spec（状态机、流程、协议、架构约束）
+5. Sparring review Spec
+6. 修复问题
 
-实现阶段（逐个 Spec 交付）：
-7. 从 Spec 拆测试用例 → TDD 实现
+实现阶段：
+7. 按 Plan 逐步实现，每步代码 + 测试
 8. typecheck + lint + test
 9. Sparring review 代码（完整 diff）
 10. 修复 MUST-FIX
-11. 提交（每个 Spec 独立提交，代码 + 测试）
+11. 提交
 ```
 例：新系统（control-plane）、重大重构
-
-**Plan vs Spec 的区别**：
-
-| | Plan | Spec |
-|---|---|---|
-| **粒度** | 整体方案，可能跨多个模块 | 单个模块/功能的行为契约 |
-| **内容** | 技术选型、架构决策、任务拆分、文件清单、实施顺序 | 用户行为→系统响应（GWT）、API 契约、状态转换、边界条件 |
-| **数量** | 一个 feature 通常一个 Plan | 一个 Plan 对应 1~N 个 Spec |
-| **位置** | `.claude/plans/` 或 `.workflow/plans/`（会话内，不入库） | `specs/` 目录（入库，长期维护） |
-| **生命周期** | 实现完成后归档 | 持续更新，是行为的 source of truth |
-
-**典型流程示例**（以 control-plane 为例）：
-```
-Plan: "control-plane 整体实施方案"
-  ├─ Spec 1: specs/control-plane-run-service.md（RunService 接口契约）
-  ├─ Spec 2: specs/control-plane-agent-service.md（AgentService 接口契约）
-  ├─ Spec 3: specs/control-plane-event-store.md（EventStore 接口契约）
-  └─ Spec 4: specs/control-plane-state-machine.md（RunStateMachine 转换规则）
-
-每个 Spec 独立 Sparring → 独立实现 → 独立 commit
-```
 
 #### Bug 修复
 ```
@@ -298,18 +277,46 @@ workflow review-code <task-id>
 - `SHOULD-FIX` → 评估后决定修或标记为已知问题
 - `NIT` → 可选修复
 
-### Spec 文件
+### Plan 和 Spec
 
-位置：`specs/` 目录。
+**Plan**（实施方案，会话级）：
+- 技术选型、架构决策、任务拆分、文件清单、实施顺序
+- 位置：`.claude/plans/` 或 `.workflow/plans/`
+- 生命周期：实施完成后归档，不入库
+
+**Spec**（设计决策，仓库级）：
+- 记录**方向性选择**——流程、状态机、协议、架构约束
+- 位置：`specs/` 目录，入库长期维护
+- Spec 存在的意义：**让整体方向选择更清晰**，是团队对"我们选了什么、为什么这样选"的共识记录
 
 | 写入 Spec | 不写入 Spec |
 |-----------|------------|
-| 用户行为和系统响应（GWT 格式） | CSS 类名、像素值 |
-| 数据结构和 API 契约 | 内部函数签名 |
-| 状态转换规则和边界条件 | 实现顺序 |
-| 错误场景和降级策略 | 样式细节 |
+| 状态机定义和转换规则 | 模块内部 API 签名 |
+| 流程编排（Run 生命周期、Finalization、Recovery） | 具体函数实现 |
+| 协议设计（SSE 双层、事件格式） | CSS / 样式 / UI 细节 |
+| 架构约束和设计原则 | 配置项枚举 |
+| 关键技术选型及理由 | 测试用例 |
 
-Spec 是**验收标准**，不是实现说明书。**Spec 的新增和修改也必须 Sparring review。**
+**已有的 Spec**（参考）：
+```
+specs/
+├── contracts.md     — Zod schema 设计决策（枚举定义、状态机、验证规则）
+└── stream.md        — Redis SSE 流设计（StreamRegistry API、Redis 配置模式）
+```
+
+**后续应补的 Spec**（举例）：
+```
+specs/
+├── run-lifecycle.md         — 15 状态状态机 + 两条执行路径 + 重试策略
+├── finalization.md          — 强一致性门 + 4 步子状态机
+├── recovery-protocol.md     — 断点恢复 + 3 种恢复路径 + 降级策略
+├── sandbox-model.md         — SandboxProvider 接口 + 生命周期 + 双通道
+└── vault-design.md          — 双层 Vault + env 注入 + 密钥轮换
+```
+
+Spec 不是实现说明书，是**设计决策的 source of truth**。改变方向时先改 Spec，再改代码。
+
+**Spec 的新增和修改也必须 Sparring review。**
 
 ## 双层 SSE 协议
 

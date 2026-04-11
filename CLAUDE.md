@@ -20,12 +20,12 @@
 
 - **Small**：改代码 → 门禁 → **Sparring** → 提交
 - **Medium**：读 Spec → 代码+测试 → 更新 Spec → 门禁 → **Sparring** → 提交
-- **Large**：写 Plan → **Sparring Plan** → 拆 Spec(s) → **Sparring 每个 Spec** → TDD → 门禁 → **Sparring 代码** → 提交
+- **Large**：写 Plan → **Sparring Plan** → 写 Spec（如需）→ **Sparring Spec** → 实现+测试 → 门禁 → **Sparring 代码** → 提交
 - **Bug**：根因分析 → **Sparring 结论** → Red Test → 修复 → 门禁 → **Sparring 代码** → 提交
 
-Plan = 整体实施方案（会话内），Spec = 模块行为契约（`specs/` 入库）。一个 Plan 可拆多个 Spec。
+Plan = 实施方案（会话内，不入库）。Spec = 方向性设计决策（`specs/` 入库）——状态机、流程、协议、架构约束。
 
-每个 commit 必须包含**代码 + 测试**。Spec 在 `specs/` 目录。
+每个 commit 必须包含**代码 + 测试**。
 
 ## 架构
 
