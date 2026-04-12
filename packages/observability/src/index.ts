@@ -11,3 +11,10 @@ export {
   REQUEST_ID_HEADER,
   validateRequestId,
 } from './request-id.js';
+export {
+  getTracer,
+  initTelemetry,
+  shutdownTelemetry,
+  type TelemetryConfig,
+  withSpan,
+} from './telemetry.js';
