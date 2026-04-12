@@ -21,7 +21,14 @@ export interface RunOrchestratorDeps {
 export class RunOrchestrator {
   constructor(private deps: RunOrchestratorDeps) {}
 
+  /**
+   * Execute a run. Supports both initial runs and follow-up runs (with parentRunId).
+   * Follow-up runs attempt to restore from the parent's checkpoint.
+   * If the parent sandbox is gone, degrades to a fresh initial run.
+   */
   async execute(runId: string, prompt: string, agentId: string): Promise<void> {
+    const run = await this.deps.runService.getById(runId);
+    const isFollowUp = run?.parentRunId != null;
     let sandboxId: string | null = null;
 
     try {
@@ -39,7 +46,13 @@ export class RunOrchestrator {
       await this.deps.runService.transition(runId, 'preparing');
       await this.deps.sandboxProvider.healthCheck(sandboxId);
 
-      // 3. preparing → running
+      // 3. Restore checkpoint for follow-up runs
+      let restoredContext: string | null = null;
+      if (isFollowUp && this.deps.checkpointService && run?.parentRunId) {
+        restoredContext = await this.tryRestoreCheckpoint(run.parentRunId);
+      }
+
+      // 4. preparing → running
       const endpointUrl = await this.deps.sandboxProvider.getEndpointUrl(sandboxId, 8787);
       if (!endpointUrl) {
         throw new Error('Sandbox endpoint URL not available');
@@ -47,15 +60,18 @@ export class RunOrchestrator {
 
       const agentBridge = new AgentBridge({ agentWorkerUrl: endpointUrl });
       await this.deps.runService.transition(runId, 'running');
-      const { streamId, response } = await agentBridge.sendPrompt(prompt, { sessionId: runId });
 
-      // Set activeStreamId on the Run so SSE② can correlate
-      await this.deps.runService.setActiveStreamId(runId, streamId);
+      // Build prompt with restored context if available
+      const fullPrompt = restoredContext
+        ? `[Restored from checkpoint]\n\nPrevious context:\n${restoredContext}\n\nNew prompt:\n${prompt}`
+        : prompt;
 
-      // 4. Consume SSE① stream and persist events to DB
+      const { response } = await agentBridge.sendPrompt(fullPrompt, { sessionId: runId });
+
+      // 5. Consume SSE stream
       await this.consumeStream(runId, response);
 
-      // 5. Finalization
+      // 6. Finalization
       await this.finalize(runId);
     } catch (error) {
       try {
@@ -72,10 +88,49 @@ export class RunOrchestrator {
     }
   }
 
+  /**
+   * Try to restore checkpoint from parent run.
+   * Returns restored messages context as string, or null if unavailable.
+   */
+  private async tryRestoreCheckpoint(parentRunId: string): Promise<string | null> {
+    if (!this.deps.checkpointService) return null;
+
+    try {
+      const result = await this.deps.checkpointService.restoreCheckpoint(parentRunId);
+      if (!result) {
+        console.log(
+          `[recovery] No checkpoint found for parent run ${parentRunId}, running as initial`
+        );
+        return null;
+      }
+
+      const events = JSON.parse(result.messages.toString());
+      // Extract text content from events for context
+      const textParts: string[] = [];
+      for (const event of events) {
+        if (event.eventType === 'text-delta' || event.eventType === 'text_delta') {
+          const content = event.payload?.content ?? event.payload?.delta ?? '';
+          if (content) textParts.push(content);
+        }
+      }
+
+      console.log(
+        `[recovery] Restored checkpoint for parent ${parentRunId}: ${events.length} events, lastSeq=${result.checkpoint.lastEventSeq}`
+      );
+      return textParts.join('');
+    } catch (err) {
+      console.warn(
+        `[recovery] Checkpoint restore failed for parent ${parentRunId}, degrading to initial:`,
+        err
+      );
+      return null;
+    }
+  }
+
   private async finalize(runId: string): Promise<void> {
     await this.deps.runService.transition(runId, 'finalizing_prepare');
 
-    // Create checkpoint (snapshot events for recovery)
+    // Create checkpoint for potential follow-up runs
     if (this.deps.checkpointService) {
       try {
         const events = await this.deps.eventStore.getEvents(runId);
@@ -88,14 +143,8 @@ export class RunOrchestrator {
     }
 
     await this.deps.runService.transition(runId, 'finalizing_uploading');
-    // TODO: Upload workspace artifacts to S3
-
     await this.deps.runService.transition(runId, 'finalizing_verifying');
-    // TODO: Verify artifact checksums
-
     await this.deps.runService.transition(runId, 'finalizing_metadata_commit');
-    // TODO: Create PR if applicable
-
     await this.deps.runService.transition(runId, 'finalized');
     await this.deps.runService.transition(runId, 'completed');
   }
