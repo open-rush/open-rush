@@ -1,33 +1,32 @@
-import PgBoss from 'pg-boss';
+import { PgBoss } from 'pg-boss';
 
 const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://rush:rush@localhost:5432/rush';
 
 async function main() {
   const boss = new PgBoss(DATABASE_URL);
 
-  boss.on('error', (error) => {
+  boss.on('error', (error: Error) => {
     console.error('pg-boss error:', error);
   });
 
   await boss.start();
   console.log('Control worker started');
 
-  await boss.work('run:execute', async ([job]) => {
-    if (!job) return;
-    const { runId, prompt, agentId } = job.data as {
-      runId: string;
-      prompt: string;
-      agentId: string;
-    };
-    console.log(`Processing run:execute — runId=${runId}, agentId=${agentId}`);
+  await boss.work<{ runId: string; prompt: string; agentId: string }>(
+    'run:execute',
+    async ([job]) => {
+      if (!job) return;
+      const { runId, agentId } = job.data;
+      console.log(`Processing run:execute — runId=${runId}, agentId=${agentId}`);
 
-    // TODO: Drive RunStateMachine transitions
-    // queued → provisioning → preparing → running → finalization → completed
-  });
+      // TODO: Drive RunStateMachine transitions
+      // queued → provisioning → preparing → running → finalization → completed
+    }
+  );
 
-  await boss.work('run:finalize', async ([job]) => {
+  await boss.work<{ runId: string }>('run:finalize', async ([job]) => {
     if (!job) return;
-    const { runId } = job.data as { runId: string };
+    const { runId } = job.data;
     console.log(`Processing run:finalize — runId=${runId}`);
 
     // TODO: Workspace snapshot, checkpoint, artifact upload
