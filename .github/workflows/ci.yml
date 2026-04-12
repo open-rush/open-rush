@@ -12,6 +12,8 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://rush:rush@localhost:5432/rush
     steps:
       - uses: actions/checkout@v6
 
@@ -27,8 +29,6 @@ jobs:
 
       - name: Build
         run: pnpm build
-        env:
-          DATABASE_URL: postgresql://rush:rush@localhost:5432/rush
 
       - name: Type check
         run: pnpm check
