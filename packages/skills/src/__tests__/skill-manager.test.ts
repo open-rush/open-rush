@@ -13,13 +13,13 @@ class MockReskillClient
       {
         name: 'commit',
         description: 'Git commit skill',
-        source: '@kanyun/commit',
+        source: '@example/commit',
         version: '1.0.0',
       },
       {
         name: 'review',
         description: 'Code review skill',
-        source: '@kanyun/review',
+        source: '@example/review',
         version: '2.0.0',
       },
     ];
@@ -94,8 +94,8 @@ describe('SkillManager', () => {
 
   describe('installForProject', () => {
     it('installs via reskill and saves to store', async () => {
-      await manager.installForProject(projectId, '@kanyun/commit');
-      expect(reskill.installed).toContain('@kanyun/commit');
+      await manager.installForProject(projectId, '@example/commit');
+      expect(reskill.installed).toContain('@example/commit');
       const skills = await manager.listProjectSkills(projectId);
       expect(skills).toHaveLength(1);
       expect(skills[0].enabled).toBe(true);
@@ -103,23 +103,23 @@ describe('SkillManager', () => {
 
     it('uses claude-code as default agent', async () => {
       const installSpy = vi.spyOn(reskill, 'install');
-      await manager.installForProject(projectId, '@kanyun/commit');
-      expect(installSpy).toHaveBeenCalledWith('@kanyun/commit', { agents: ['claude-code'] });
+      await manager.installForProject(projectId, '@example/commit');
+      expect(installSpy).toHaveBeenCalledWith('@example/commit', { agents: ['claude-code'] });
     });
 
     it('supports custom agents', async () => {
       const installSpy = vi.spyOn(reskill, 'install');
-      await manager.installForProject(projectId, '@kanyun/commit', {
+      await manager.installForProject(projectId, '@example/commit', {
         agents: ['claude-code', 'cursor'],
       });
-      expect(installSpy).toHaveBeenCalledWith('@kanyun/commit', {
+      expect(installSpy).toHaveBeenCalledWith('@example/commit', {
         agents: ['claude-code', 'cursor'],
       });
     });
 
     it('skips duplicate install (idempotent)', async () => {
-      await manager.installForProject(projectId, '@kanyun/commit');
-      await manager.installForProject(projectId, '@kanyun/commit');
+      await manager.installForProject(projectId, '@example/commit');
+      await manager.installForProject(projectId, '@example/commit');
       const skills = await manager.listProjectSkills(projectId);
       expect(skills).toHaveLength(1);
     });
@@ -128,11 +128,11 @@ describe('SkillManager', () => {
   describe('uninstallFromProject', () => {
     it('removes from store and calls reskill uninstall', async () => {
       const uninstallSpy = vi.spyOn(reskill, 'uninstall');
-      await manager.installForProject(projectId, '@kanyun/commit');
-      await manager.uninstallFromProject(projectId, '@kanyun/commit');
+      await manager.installForProject(projectId, '@example/commit');
+      await manager.uninstallFromProject(projectId, '@example/commit');
       const skills = await manager.listProjectSkills(projectId);
       expect(skills).toHaveLength(0);
-      expect(uninstallSpy).toHaveBeenCalledWith('@kanyun/commit');
+      expect(uninstallSpy).toHaveBeenCalledWith('@example/commit');
     });
 
     it('throws for non-existent skill', async () => {
@@ -144,44 +144,44 @@ describe('SkillManager', () => {
 
   describe('enable/disable', () => {
     it('disables a skill', async () => {
-      await manager.installForProject(projectId, '@kanyun/commit');
-      await manager.disableSkill(projectId, '@kanyun/commit');
+      await manager.installForProject(projectId, '@example/commit');
+      await manager.disableSkill(projectId, '@example/commit');
       const skills = await manager.listProjectSkills(projectId);
       expect(skills[0].enabled).toBe(false);
     });
 
     it('re-enables a disabled skill', async () => {
-      await manager.installForProject(projectId, '@kanyun/commit');
-      await manager.disableSkill(projectId, '@kanyun/commit');
-      await manager.enableSkill(projectId, '@kanyun/commit');
+      await manager.installForProject(projectId, '@example/commit');
+      await manager.disableSkill(projectId, '@example/commit');
+      await manager.enableSkill(projectId, '@example/commit');
       const skills = await manager.listProjectSkills(projectId);
       expect(skills[0].enabled).toBe(true);
     });
 
     it('getEnabledSkills filters disabled', async () => {
-      await manager.installForProject(projectId, '@kanyun/commit');
-      await manager.installForProject(projectId, '@kanyun/review');
-      await manager.disableSkill(projectId, '@kanyun/commit');
+      await manager.installForProject(projectId, '@example/commit');
+      await manager.installForProject(projectId, '@example/review');
+      await manager.disableSkill(projectId, '@example/commit');
       const enabled = await manager.getEnabledSkills(projectId);
       expect(enabled).toHaveLength(1);
-      expect(enabled[0].name).toBe('@kanyun/review');
+      expect(enabled[0].name).toBe('@example/review');
     });
   });
 
   describe('resolveForAgent', () => {
     it('returns sources of enabled skills', async () => {
-      await manager.installForProject(projectId, '@kanyun/commit');
-      await manager.installForProject(projectId, '@kanyun/review');
+      await manager.installForProject(projectId, '@example/commit');
+      await manager.installForProject(projectId, '@example/review');
       const refs = await manager.resolveForAgent(projectId);
-      expect(refs).toEqual(['@kanyun/commit', '@kanyun/review']);
+      expect(refs).toEqual(['@example/commit', '@example/review']);
     });
 
     it('excludes disabled skills', async () => {
-      await manager.installForProject(projectId, '@kanyun/commit');
-      await manager.installForProject(projectId, '@kanyun/review');
-      await manager.disableSkill(projectId, '@kanyun/commit');
+      await manager.installForProject(projectId, '@example/commit');
+      await manager.installForProject(projectId, '@example/review');
+      await manager.disableSkill(projectId, '@example/commit');
       const refs = await manager.resolveForAgent(projectId);
-      expect(refs).toEqual(['@kanyun/review']);
+      expect(refs).toEqual(['@example/review']);
     });
   });
 });
