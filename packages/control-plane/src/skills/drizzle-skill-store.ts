@@ -63,6 +63,8 @@ export class DrizzleSkillStore implements SkillStore {
     if (update.visibility !== undefined) set.visibility = update.visibility;
     if (update.enabled !== undefined) set.enabled = update.enabled;
 
+    if (Object.keys(set).length === 0) return false;
+
     const rows = await this.db
       .update(skills)
       .set(set)

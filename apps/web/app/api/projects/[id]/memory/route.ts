@@ -74,8 +74,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return apiError(400, 'VALIDATION_ERROR', 'Invalid JSON body');
   }
 
-  if (!body.agentId || !body.content) {
-    return apiError(400, 'VALIDATION_ERROR', 'agentId and content are required');
+  if (typeof body.agentId !== 'string' || typeof body.content !== 'string') {
+    return apiError(400, 'VALIDATION_ERROR', 'agentId and content must be strings');
+  }
+  if (
+    body.importance !== undefined &&
+    (typeof body.importance !== 'number' || body.importance < 0 || body.importance > 1)
+  ) {
+    return apiError(400, 'VALIDATION_ERROR', 'importance must be a number between 0 and 1');
   }
 
   const store = getMemoryStore();

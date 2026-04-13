@@ -57,6 +57,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return apiError(400, 'VALIDATION_ERROR', 'skillRef is required');
   }
 
+  if (
+    body.visibility !== undefined &&
+    body.visibility !== 'public' &&
+    body.visibility !== 'private'
+  ) {
+    return apiError(400, 'VALIDATION_ERROR', 'visibility must be public or private');
+  }
+
   const manager = getSkillManager();
   await manager.installForProject(projectId, body.skillRef, {
     visibility: (body.visibility as 'public' | 'private') ?? 'public',

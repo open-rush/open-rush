@@ -70,6 +70,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       `transport must be one of: ${validTransports.join(', ')}`
     );
   }
+  if (body.transport === 'stdio' && !body.command) {
+    return apiError(400, 'VALIDATION_ERROR', 'command is required for stdio transport');
+  }
+  if ((body.transport === 'sse' || body.transport === 'streamable-http') && !body.url) {
+    return apiError(400, 'VALIDATION_ERROR', 'url is required for sse/streamable-http transport');
+  }
 
   const config: McpServerConfig = {
     id: randomUUID(),

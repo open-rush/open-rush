@@ -74,6 +74,8 @@ export class DrizzleMemoryDb implements MemoryDb {
     limit: number,
     minScore: number
   ): Promise<MemorySearchResult[]> {
+    if (embedding.length === 0) return [];
+
     const vectorStr = `[${embedding.join(',')}]`;
     const rows = await this.db.execute(sql`
       SELECT id, agent_id, project_id, content, category, importance, metadata,
