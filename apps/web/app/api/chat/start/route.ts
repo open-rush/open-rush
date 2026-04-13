@@ -8,6 +8,7 @@
 import { ConversationService, DrizzleConversationDb } from '@rush/control-plane';
 import { getDbClient, projects } from '@rush/db';
 import { and, eq, isNull } from 'drizzle-orm';
+import { resolveAgentIdForProject } from '@/lib/agents/resolve-agent-id';
 import { apiError, apiSuccess, requireAuth, verifyProjectAccess } from '@/lib/api-utils';
 
 const DEFAULT_PROJECT_NAME = 'My Project';
@@ -65,6 +66,17 @@ export async function POST(req: Request) {
     } else {
       project = existing;
     }
+  }
+
+  try {
+    agentId = await resolveAgentIdForProject({
+      db,
+      projectId: project.id,
+      userId,
+      requestedAgentId: agentId,
+    });
+  } catch (error) {
+    return apiError(400, 'INVALID_AGENT', error instanceof Error ? error.message : 'Invalid agent');
   }
 
   // 2. Create conversation

@@ -1,4 +1,11 @@
-import { DrizzleRunDb, InMemoryEventStore, RunOrchestrator, RunService } from '@rush/control-plane';
+import {
+  AgentExecutor,
+  DrizzleAgentConfigStore,
+  DrizzleRunDb,
+  InMemoryEventStore,
+  RunOrchestrator,
+  RunService,
+} from '@rush/control-plane';
 import { closeDbClient, getDbClient } from '@rush/db';
 import { OpenSandboxProvider } from '@rush/sandbox';
 import { PgBoss } from 'pg-boss';
@@ -13,12 +20,34 @@ async function main() {
   const db = getDbClient(DATABASE_URL);
   const runDb = new DrizzleRunDb(db);
   const runService = new RunService(runDb);
+  const agentStore = new DrizzleAgentConfigStore(db);
+  const agentExecutor = new AgentExecutor({
+    resolveAgent: async (agentId, projectId) => {
+      const agent = await agentStore.getById(agentId);
+      if (!agent || agent.projectId !== projectId || agent.status !== 'active') {
+        return null;
+      }
+      return agent;
+    },
+    resolveVaultEnv: async () => ({}),
+    resolveSkills: async () => [],
+    resolveMcpServers: async () => [],
+  });
   const sandboxProvider = new OpenSandboxProvider({
     apiUrl: OPENSANDBOX_API_URL,
     execHost: EXEC_HOST,
   });
   const eventStore = new InMemoryEventStore();
-  const orchestrator = new RunOrchestrator({ runService, sandboxProvider, eventStore });
+  const orchestrator = new RunOrchestrator({
+    runService,
+    sandboxProvider,
+    eventStore,
+    agentExecutor,
+    resolveProjectIdForAgent: async (agentId: string) => {
+      const agent = await agentStore.getById(agentId);
+      return agent?.projectId ?? null;
+    },
+  });
 
   boss.on('error', (error: Error) => {
     console.error('pg-boss error:', error);

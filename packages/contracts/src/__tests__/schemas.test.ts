@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Agent } from '../agent.js';
+import {
+  Agent,
+  CreateAgentRequest,
+  ProjectAgent,
+  SetCurrentProjectAgentRequest,
+} from '../agent.js';
 import { ApiResponse, CreateRunRequest, CreateRunResponse } from '../api.js';
 import { Artifact } from '../artifact.js';
 import { RunCheckpoint } from '../checkpoint.js';
@@ -102,6 +107,7 @@ describe('Agent', () => {
   const validAgent = {
     id: UUID,
     projectId: UUID2,
+    name: 'Web Builder',
     createdAt: NOW,
     updatedAt: NOW,
     lastActiveAt: NOW,
@@ -110,6 +116,8 @@ describe('Agent', () => {
   it('parses with defaults', () => {
     const a = Agent.parse(validAgent);
     expect(a.status).toBe('active');
+    expect(a.providerType).toBe('claude-code');
+    expect(a.deliveryMode).toBe('chat');
     expect(a.customTitle).toBeNull();
     expect(a.config).toBeNull();
   });
@@ -121,6 +129,44 @@ describe('Agent', () => {
   it('accepts customTitle at 200 chars', () => {
     const a = Agent.parse({ ...validAgent, customTitle: 'a'.repeat(200) });
     expect(a.customTitle).toHaveLength(200);
+  });
+
+  it('rejects maxSteps over 100', () => {
+    expect(() => Agent.parse({ ...validAgent, maxSteps: 101 })).toThrow();
+  });
+});
+
+describe('CreateAgentRequest', () => {
+  it('parses minimal valid request', () => {
+    const req = CreateAgentRequest.parse({
+      projectId: UUID,
+      name: 'Research Agent',
+    });
+    expect(req.projectId).toBe(UUID);
+    expect(req.providerType).toBe('claude-code');
+  });
+});
+
+describe('ProjectAgent', () => {
+  const validProjectAgent = {
+    id: UUID,
+    projectId: UUID,
+    agentId: UUID2,
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+
+  it('parses with defaults', () => {
+    const pa = ProjectAgent.parse(validProjectAgent);
+    expect(pa.isCurrent).toBe(false);
+    expect(pa.configOverride).toBeNull();
+  });
+});
+
+describe('SetCurrentProjectAgentRequest', () => {
+  it('requires agentId', () => {
+    const req = SetCurrentProjectAgentRequest.parse({ agentId: UUID });
+    expect(req.agentId).toBe(UUID);
   });
 });
 

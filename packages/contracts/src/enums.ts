@@ -51,8 +51,14 @@ export function isValidRunTransition(from: RunStatus, to: RunStatus): boolean {
 
 // --- Agent ---
 
-export const AgentStatus = z.enum(['active', 'closed']);
+export const AgentStatus = z.enum(['active', 'inactive']);
 export type AgentStatus = z.infer<typeof AgentStatus>;
+
+export const AgentProviderType = z.enum(['claude-code', 'gemini', 'custom']);
+export type AgentProviderType = z.infer<typeof AgentProviderType>;
+
+export const AgentDeliveryMode = z.enum(['chat', 'workspace']);
+export type AgentDeliveryMode = z.infer<typeof AgentDeliveryMode>;
 
 // --- Trigger & Provider ---
 

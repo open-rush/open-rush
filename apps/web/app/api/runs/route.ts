@@ -1,7 +1,12 @@
 import { CreateRunRequest } from '@rush/contracts';
-import { DrizzleRunDb, RunService } from '@rush/control-plane';
-import { agents, getDbClient, projects } from '@rush/db';
-import { and, eq } from 'drizzle-orm';
+import {
+  DrizzleAgentConfigStore,
+  DrizzleRunDb,
+  ProjectAgentService,
+  RunService,
+} from '@rush/control-plane';
+import { getDbClient, projects } from '@rush/db';
+import { eq } from 'drizzle-orm';
 
 import { apiError, apiSuccess, requireAuth, verifyProjectAccess } from '@/lib/api-utils';
 import { getQueue } from '@/lib/queue';
@@ -41,27 +46,34 @@ export async function POST(request: Request) {
     return apiError(403, 'FORBIDDEN', 'No access to this project');
   }
 
-  // Validate agentId belongs to this project if provided
-  let isNewAgent = false;
+  // Resolve current agent for the project. We no longer auto-create placeholder agents.
+  const store = new DrizzleAgentConfigStore(db);
+  const projectAgentService = new ProjectAgentService(db);
   if (agentId) {
-    const [existingAgent] = await db
-      .select()
-      .from(agents)
-      .where(and(eq(agents.id, agentId), eq(agents.projectId, projectId)))
-      .limit(1);
-    if (!existingAgent) {
+    const existingAgent = await store.getById(agentId);
+    if (
+      !existingAgent ||
+      existingAgent.projectId !== projectId ||
+      existingAgent.status !== 'active'
+    ) {
       return apiError(400, 'INVALID_AGENT', 'Agent does not belong to this project');
     }
+
+    await projectAgentService.setCurrentAgent(projectId, agentId);
   } else {
-    const [newAgent] = await db
-      .insert(agents)
-      .values({
-        projectId,
-        createdBy: userId,
-      })
-      .returning();
-    agentId = newAgent.id;
-    isNewAgent = true;
+    const current = await projectAgentService.getCurrentAgent(projectId);
+    if (!current) {
+      return apiError(
+        400,
+        'MISSING_AGENT',
+        'No agent selected for this project. Set a current agent first.'
+      );
+    }
+    agentId = current.agentId;
+  }
+
+  if (!agentId) {
+    return apiError(400, 'MISSING_AGENT', 'Unable to resolve an agent for this run');
   }
 
   // Create Run in DB
@@ -83,5 +95,5 @@ export async function POST(request: Request) {
     agentId,
   });
 
-  return apiSuccess({ runId: run.id, agentId, isNewAgent }, 201);
+  return apiSuccess({ runId: run.id, agentId, isNewAgent: false }, 201);
 }

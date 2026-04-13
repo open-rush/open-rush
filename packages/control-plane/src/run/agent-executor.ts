@@ -41,7 +41,7 @@ export class AgentExecutor {
       env,
       skills: filteredSkills,
       mcpServers: filteredMcp,
-      systemPrompt: agentConfig.systemPrompt,
+      systemPrompt: agentConfig.systemPrompt ?? '',
     };
   }
 }

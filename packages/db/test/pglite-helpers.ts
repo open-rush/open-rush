@@ -14,6 +14,7 @@ const TABLE_NAMES = [
   'run_events',
   'runs',
   'sandboxes',
+  'project_agents',
   'agents',
   'project_members',
   'projects',
@@ -122,6 +123,18 @@ async function applySchema(db: TestDb): Promise<void> {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
       status VARCHAR(20) NOT NULL DEFAULT 'active',
+      name VARCHAR(120) NOT NULL DEFAULT 'New Agent',
+      description TEXT,
+      icon VARCHAR(50),
+      provider_type VARCHAR(50) NOT NULL DEFAULT 'claude-code',
+      model VARCHAR(255),
+      system_prompt TEXT,
+      allowed_tools JSONB NOT NULL DEFAULT '[]'::jsonb,
+      skills JSONB NOT NULL DEFAULT '[]'::jsonb,
+      mcp_servers JSONB NOT NULL DEFAULT '[]'::jsonb,
+      max_steps INTEGER NOT NULL DEFAULT 30,
+      delivery_mode VARCHAR(20) NOT NULL DEFAULT 'chat',
+      is_builtin BOOLEAN NOT NULL DEFAULT false,
       custom_title VARCHAR(200),
       config JSONB,
       created_by UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -130,6 +143,24 @@ async function applySchema(db: TestDb): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       last_active_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `);
+
+  // Project agents
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS project_agents (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+      is_current BOOLEAN NOT NULL DEFAULT false,
+      config_override JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE(project_id, agent_id)
+    )
+  `);
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS project_agents_current_idx
+    ON project_agents (project_id) WHERE is_current = true
   `);
 
   // Conversations

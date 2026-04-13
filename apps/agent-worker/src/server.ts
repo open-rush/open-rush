@@ -21,11 +21,17 @@ app.get('/status', (c) => c.json({ ready: true, activeRuns: activeSessions.size 
 
 app.post('/prompt', async (c) => {
   const body = await c.req.json();
-  const { prompt, sessionId, messages } = body as {
-    prompt?: string;
-    sessionId?: string;
-    messages?: Array<{ role: string; content: string }>;
-  };
+  const { prompt, sessionId, messages, env, systemPrompt, modelId, allowedTools, maxTurns } =
+    body as {
+      prompt?: string;
+      sessionId?: string;
+      messages?: Array<{ role: string; content: string }>;
+      env?: Record<string, string>;
+      systemPrompt?: string;
+      modelId?: string;
+      allowedTools?: string[];
+      maxTurns?: number;
+    };
 
   // Support both prompt (direct) and messages (AI SDK useChat) formats
   const userPrompt = prompt ?? messages?.filter((m) => m.role === 'user').pop()?.content;
@@ -39,14 +45,24 @@ app.post('/prompt', async (c) => {
 
   try {
     // Model from env: ANTHROPIC_MODEL (Bedrock ARN) or fallback
-    const modelId = process.env.ANTHROPIC_MODEL || 'sonnet';
+    const effectiveModelId = modelId ?? process.env.ANTHROPIC_MODEL ?? 'sonnet';
+    const providerEnv: Record<string, string> = { ...(env ?? {}) };
+    if (process.env.ANTHROPIC_BASE_URL) {
+      providerEnv.ANTHROPIC_BASE_URL = process.env.ANTHROPIC_BASE_URL;
+    }
+    if (process.env.ANTHROPIC_API_KEY) {
+      providerEnv.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+    }
 
     const result = streamText({
-      model: claudeCode(modelId, {
+      model: claudeCode(effectiveModelId, {
         permissionMode: 'bypassPermissions',
-        maxTurns: 30,
+        maxTurns: maxTurns ?? 30,
         sessionId: sid,
+        ...(allowedTools?.length ? { allowedTools } : {}),
+        ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       }),
+      ...(systemPrompt ? { system: systemPrompt } : {}),
       prompt: userPrompt,
       abortSignal: abortController.signal,
     });

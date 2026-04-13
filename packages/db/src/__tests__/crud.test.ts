@@ -13,6 +13,7 @@ import { closeTestDb, createTestDb, type TestDb, truncateAll } from '../../test/
 import {
   accounts,
   agents,
+  projectAgents,
   projectMembers,
   runEvents,
   runs,
@@ -131,6 +132,49 @@ describe('agent → run → run_events chain', () => {
     const remainingEvents = await db.select().from(runEvents).where(eq(runEvents.runId, run.id));
     expect(remainingRuns).toHaveLength(0);
     expect(remainingEvents).toHaveLength(0);
+  });
+});
+
+describe('project_agents', () => {
+  it('links project to current agent with override config', async () => {
+    const user = await createTestUser(db);
+    const project = await createTestProject(db, user.id);
+    const agent = await createTestAgent(db, project.id, user.id);
+
+    const [projectAgent] = await db
+      .insert(projectAgents)
+      .values({
+        projectId: project.id,
+        agentId: agent.id,
+        isCurrent: true,
+        configOverride: { maxSteps: 20 },
+      })
+      .returning();
+
+    expect(projectAgent.projectId).toBe(project.id);
+    expect(projectAgent.agentId).toBe(agent.id);
+    expect(projectAgent.isCurrent).toBe(true);
+  });
+
+  it('enforces unique current agent per project', async () => {
+    const user = await createTestUser(db);
+    const project = await createTestProject(db, user.id);
+    const agentA = await createTestAgent(db, project.id, user.id);
+    const agentB = await createTestAgent(db, project.id, user.id);
+
+    await db.insert(projectAgents).values({
+      projectId: project.id,
+      agentId: agentA.id,
+      isCurrent: true,
+    });
+
+    await expect(
+      db.insert(projectAgents).values({
+        projectId: project.id,
+        agentId: agentB.id,
+        isCurrent: true,
+      })
+    ).rejects.toThrow();
   });
 });
 

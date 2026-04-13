@@ -31,3 +31,5 @@ test-results/
 # misc
 *.tsbuildinfo
 *.log
+
+.pnpm-lock.yaml

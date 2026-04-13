@@ -180,7 +180,7 @@ describe('DrizzleProjectDb', () => {
 
   describe('listDeleted', () => {
     it('lists only soft-deleted projects by user', async () => {
-      const p1 = await projectDb.create({ name: 'Active', createdBy: testUserId });
+      const _p1 = await projectDb.create({ name: 'Active', createdBy: testUserId });
       const p2 = await projectDb.create({ name: 'Deleted', createdBy: testUserId });
       await projectDb.softDelete(p2.id);
 

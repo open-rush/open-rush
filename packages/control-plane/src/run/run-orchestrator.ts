@@ -1,7 +1,7 @@
 import type { CreateSandboxOptions, SandboxProvider } from '@rush/sandbox';
-
 import type { EventStore } from '../event-store.js';
 import { AgentBridge } from './agent-bridge.js';
+import type { AgentExecutor } from './agent-executor.js';
 import type { CheckpointService } from './checkpoint-service.js';
 import type { RunService } from './run-service.js';
 import {
@@ -16,6 +16,8 @@ export interface RunOrchestratorDeps {
   sandboxProvider: SandboxProvider;
   eventStore: EventStore;
   checkpointService?: CheckpointService;
+  agentExecutor?: AgentExecutor;
+  resolveProjectIdForAgent?: (agentId: string) => Promise<string | null>;
 }
 
 export class RunOrchestrator {
@@ -30,13 +32,23 @@ export class RunOrchestrator {
     const run = await this.deps.runService.getById(runId);
     const isFollowUp = run?.parentRunId != null;
     let sandboxId: string | null = null;
+    let agentContext: Awaited<ReturnType<AgentExecutor['prepareContext']>> | null = null;
 
     try {
       // 1. queued → provisioning
       await this.deps.runService.transition(runId, 'provisioning');
 
+      if (this.deps.agentExecutor && this.deps.resolveProjectIdForAgent) {
+        const projectId = await this.deps.resolveProjectIdForAgent(agentId);
+        if (!projectId) {
+          throw new Error(`Project not found for agent ${agentId}`);
+        }
+        agentContext = await this.deps.agentExecutor.prepareContext(agentId, projectId);
+      }
+
       const sandboxOptions: CreateSandboxOptions = {
         agentId,
+        env: agentContext?.env,
         ttlSeconds: 3600,
       };
       const sandbox = await this.deps.sandboxProvider.create(sandboxOptions);
@@ -66,7 +78,14 @@ export class RunOrchestrator {
         ? `[Restored from checkpoint]\n\nPrevious context:\n${restoredContext}\n\nNew prompt:\n${prompt}`
         : prompt;
 
-      const { response } = await agentBridge.sendPrompt(fullPrompt, { sessionId: runId });
+      const { response } = await agentBridge.sendPrompt(fullPrompt, {
+        sessionId: runId,
+        env: agentContext?.env,
+        systemPrompt: agentContext?.systemPrompt,
+        modelId: agentContext?.agentConfig.model ?? undefined,
+        allowedTools: agentContext?.agentConfig.allowedTools,
+        maxTurns: agentContext?.agentConfig.maxSteps,
+      });
 
       // 5. Consume SSE stream
       await this.consumeStream(runId, response);

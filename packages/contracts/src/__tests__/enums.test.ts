@@ -119,7 +119,11 @@ describe('AgentStatus', () => {
 
   it('parses valid values', () => {
     expect(AgentStatus.parse('active')).toBe('active');
-    expect(AgentStatus.parse('closed')).toBe('closed');
+    expect(AgentStatus.parse('inactive')).toBe('inactive');
+  });
+
+  it('rejects closed (legacy status)', () => {
+    expect(() => AgentStatus.parse('closed')).toThrow();
   });
 
   it('rejects deleted (not in open-rush)', () => {

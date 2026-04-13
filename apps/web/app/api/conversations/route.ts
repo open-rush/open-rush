@@ -1,7 +1,7 @@
 import { ConversationService, DrizzleConversationDb } from '@rush/control-plane';
 import { getDbClient } from '@rush/db';
-
-import { apiError, apiSuccess, requireAuth } from '@/lib/api-utils';
+import { resolveAgentIdForProject } from '@/lib/agents/resolve-agent-id';
+import { apiError, apiSuccess, requireAuth, verifyProjectAccess } from '@/lib/api-utils';
 
 export async function GET(request: Request) {
   try {
@@ -46,8 +46,30 @@ export async function POST(request: Request) {
   }
 
   const db = getDbClient();
+  const hasAccess = await verifyProjectAccess(projectId, userId);
+  if (!hasAccess) {
+    return apiError(403, 'FORBIDDEN', 'No access to this project');
+  }
+
+  let resolvedAgentId: string;
+  try {
+    resolvedAgentId = await resolveAgentIdForProject({
+      db,
+      projectId,
+      userId,
+      requestedAgentId: agentId,
+    });
+  } catch (error) {
+    return apiError(400, 'INVALID_AGENT', error instanceof Error ? error.message : 'Invalid agent');
+  }
+
   const service = new ConversationService(new DrizzleConversationDb(db));
-  const conversation = await service.create({ projectId, userId, agentId, title });
+  const conversation = await service.create({
+    projectId,
+    userId,
+    agentId: resolvedAgentId,
+    title,
+  });
 
   return apiSuccess(conversation, 201);
 }

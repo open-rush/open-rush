@@ -9,13 +9,9 @@ class InMemoryAgentStore implements AgentConfigStore {
     return Array.from(this.agents.values()).filter((a) => a.scope === 'builtin');
   }
 
-  async getGlobalAgents(): Promise<AgentConfig[]> {
-    return Array.from(this.agents.values()).filter((a) => a.scope === 'global');
-  }
-
   async getProjectAgents(projectId: string): Promise<AgentConfig[]> {
     return Array.from(this.agents.values()).filter(
-      (a) => a.scope === 'project' && a.metadata?.projectId === projectId
+      (a) => a.scope === 'project' && a.projectId === projectId
     );
   }
 
@@ -43,11 +39,15 @@ class InMemoryAgentStore implements AgentConfigStore {
 function makeAgent(overrides: Partial<AgentConfig> = {}): AgentConfig {
   return {
     id: randomUUID(),
+    projectId: randomUUID(),
     name: 'Test Agent',
     scope: 'project',
+    status: 'active',
     providerType: 'claude-code',
     model: 'claude-sonnet-4-6',
     systemPrompt: 'You are a test agent.',
+    maxSteps: 30,
+    deliveryMode: 'chat',
     ...overrides,
   };
 }
@@ -72,7 +72,7 @@ describe('AgentRegistry', () => {
 
   describe('createAgent', () => {
     it('creates project agent', async () => {
-      const config = makeAgent({ metadata: { projectId } });
+      const config = makeAgent({ projectId });
       const created = await registry.createAgent(config);
       expect(created.id).toBe(config.id);
     });
@@ -115,13 +115,12 @@ describe('AgentRegistry', () => {
   });
 
   describe('getAgentsForProject', () => {
-    it('merges builtin + global + project', async () => {
+    it('merges builtin + project', async () => {
       await store.create(makeAgent({ id: 'web-builder', scope: 'builtin' }));
-      await store.create(makeAgent({ id: 'g1', scope: 'global' }));
-      await store.create(makeAgent({ id: 'p1', scope: 'project', metadata: { projectId } }));
+      await store.create(makeAgent({ id: 'p1', scope: 'project', projectId }));
 
       const agents = await registry.getAgentsForProject(projectId);
-      expect(agents).toHaveLength(3);
+      expect(agents).toHaveLength(2);
     });
 
     it('project overrides builtin with same id', async () => {
@@ -133,7 +132,7 @@ describe('AgentRegistry', () => {
           id: 'web-builder',
           scope: 'project',
           model: 'claude-opus-4-6',
-          metadata: { projectId },
+          projectId,
         })
       );
 
@@ -145,7 +144,7 @@ describe('AgentRegistry', () => {
 
   describe('resolveConfig', () => {
     it('finds agent by id in project context', async () => {
-      await store.create(makeAgent({ id: 'my-agent', scope: 'global' }));
+      await store.create(makeAgent({ id: 'my-agent', projectId }));
       const resolved = await registry.resolveConfig('my-agent', projectId);
       expect(resolved?.id).toBe('my-agent');
     });

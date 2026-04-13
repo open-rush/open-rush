@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { ProjectAgentManager } from '@/components/agents/project-agent-manager';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -124,6 +125,11 @@ export default function ProjectSettingsPage() {
           ))}
         </div>
       </Card>
+
+      {/* Agents */}
+      <div id="agents" className="mb-6">
+        <ProjectAgentManager projectId={id} />
+      </div>
 
       <Separator className="my-6" />
 

@@ -4,6 +4,7 @@ export { artifacts } from './artifacts.js';
 export { conversations } from './conversations.js';
 export { mcpServers } from './mcp-servers.js';
 export { messages } from './messages.js';
+export { projectAgents } from './project-agents.js';
 export { projectMembers } from './project-members.js';
 export { projects } from './projects.js';
 export { runCheckpoints } from './run-checkpoints.js';

@@ -4,6 +4,7 @@ import {
   accounts,
   agents,
   artifacts,
+  projectAgents,
   projectMembers,
   projects,
   runCheckpoints,
@@ -22,6 +23,7 @@ const ALL_TABLES = {
   sessions,
   verificationTokens,
   projects,
+  projectAgents,
   projectMembers,
   agents,
   runs,
@@ -39,6 +41,7 @@ describe('schema table names', () => {
     sessions: 'sessions',
     verificationTokens: 'verification_tokens',
     projects: 'projects',
+    projectAgents: 'project_agents',
     projectMembers: 'project_members',
     agents: 'agents',
     runs: 'runs',
@@ -56,9 +59,9 @@ describe('schema table names', () => {
   }
 });
 
-describe('schema exports all 13 tables', () => {
-  it('has exactly 13 tables', () => {
-    expect(Object.keys(ALL_TABLES)).toHaveLength(13);
+describe('schema exports all 14 tables', () => {
+  it('has exactly 14 tables', () => {
+    expect(Object.keys(ALL_TABLES)).toHaveLength(14);
   });
 });
 
@@ -78,6 +81,14 @@ describe('key columns exist', () => {
     expect(cols).toContain('prompt');
     expect(cols).toContain('provider');
     expect(cols).toContain('connectionMode');
+  });
+
+  it('project_agents has project_id, agent_id, is_current, config_override', () => {
+    const cols = Object.keys(getTableColumns(projectAgents));
+    expect(cols).toContain('projectId');
+    expect(cols).toContain('agentId');
+    expect(cols).toContain('isCurrent');
+    expect(cols).toContain('configOverride');
   });
 
   it('run_events has run_id, seq, event_type, payload', () => {

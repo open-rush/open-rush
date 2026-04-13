@@ -17,6 +17,10 @@ export class AgentBridge {
       sessionId?: string;
       env?: Record<string, string>;
       requestId?: string;
+      systemPrompt?: string;
+      modelId?: string;
+      allowedTools?: string[];
+      maxTurns?: number;
     } = {}
   ): Promise<AgentBridgeResult> {
     const streamId = `stream-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -35,6 +39,10 @@ export class AgentBridge {
         prompt,
         sessionId: options.sessionId,
         env: options.env,
+        systemPrompt: options.systemPrompt,
+        modelId: options.modelId,
+        allowedTools: options.allowedTools,
+        maxTurns: options.maxTurns,
         streamId,
       }),
       signal: AbortSignal.timeout(this.config.requestTimeoutMs ?? 300_000),

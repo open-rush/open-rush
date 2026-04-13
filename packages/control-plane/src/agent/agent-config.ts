@@ -1,23 +1,28 @@
-export type AgentScope = 'builtin' | 'global' | 'project';
+export type AgentScope = 'builtin' | 'project';
 
 export interface AgentConfig {
   id: string;
+  projectId: string | null;
   name: string;
   scope: AgentScope;
+  status: 'active' | 'inactive';
+  description?: string | null;
+  icon?: string | null;
   providerType: string;
-  model: string;
-  systemPrompt: string;
+  model: string | null;
+  systemPrompt: string | null;
   mcpServers?: string[];
   skills?: string[];
   allowedTools?: string[];
-  maxBudgetTokens?: number;
-  maxBudgetCostCents?: number;
+  maxSteps?: number;
+  deliveryMode?: 'chat' | 'workspace';
+  isBuiltin?: boolean;
+  createdBy?: string | null;
   metadata?: Record<string, unknown>;
 }
 
 export interface AgentConfigStore {
   getBuiltinAgents(): Promise<AgentConfig[]>;
-  getGlobalAgents(): Promise<AgentConfig[]>;
   getProjectAgents(projectId: string): Promise<AgentConfig[]>;
   getById(id: string): Promise<AgentConfig | null>;
   create(config: AgentConfig): Promise<AgentConfig>;
@@ -28,13 +33,20 @@ export interface AgentConfigStore {
 const BUILTIN_AGENTS: AgentConfig[] = [
   {
     id: 'web-builder',
+    projectId: null,
     name: 'Web Builder',
     scope: 'builtin',
+    status: 'active',
+    description: 'Build and iterate on web applications in the project workspace.',
+    icon: 'code',
     providerType: 'claude-code',
     model: 'claude-sonnet-4-6',
     systemPrompt:
       'You are a web development assistant. Help users build web applications using modern technologies. You can create, edit, and manage files in the project workspace.',
     allowedTools: ['Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep'],
+    maxSteps: 30,
+    deliveryMode: 'workspace',
+    isBuiltin: true,
   },
 ];
 
@@ -42,15 +54,13 @@ export class AgentRegistry {
   constructor(private store: AgentConfigStore) {}
 
   async getAgentsForProject(projectId: string): Promise<AgentConfig[]> {
-    const [builtin, global, project] = await Promise.all([
+    const [builtin, project] = await Promise.all([
       this.store.getBuiltinAgents(),
-      this.store.getGlobalAgents(),
       this.store.getProjectAgents(projectId),
     ]);
 
     const merged = new Map<string, AgentConfig>();
     for (const a of builtin) merged.set(a.id, a);
-    for (const a of global) merged.set(a.id, a);
     for (const a of project) merged.set(a.id, a);
 
     return Array.from(merged.values());
