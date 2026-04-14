@@ -74,8 +74,6 @@ export async function POST(request: Request) {
     name: parsed.data.name,
     description: parsed.data.description,
     icon: parsed.data.icon,
-    providerType: parsed.data.providerType,
-    model: parsed.data.model,
     systemPrompt: parsed.data.systemPrompt,
     allowedTools: parsed.data.allowedTools,
     skills: parsed.data.skills,

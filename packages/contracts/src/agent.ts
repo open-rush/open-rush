@@ -1,12 +1,10 @@
 import { z } from 'zod';
-import { AgentDeliveryMode, AgentProviderType, AgentStatus } from './enums.js';
+import { AgentDeliveryMode, AgentStatus } from './enums.js';
 
 export const AgentConfig = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(2000).nullable().default(null),
   icon: z.string().max(50).nullable().default(null),
-  providerType: AgentProviderType.default('claude-code'),
-  model: z.string().max(255).nullable().default(null),
   systemPrompt: z.string().max(20000).nullable().default(null),
   allowedTools: z.array(z.string().min(1)).default([]),
   skills: z.array(z.string().min(1)).default([]),

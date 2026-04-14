@@ -82,7 +82,6 @@ export default async function DashboardPage() {
                     {project.currentAgent ? (
                       <div className="mt-2 flex items-center gap-2">
                         <Badge variant="secondary">{project.currentAgent.name}</Badge>
-                        <Badge variant="outline">{project.currentAgent.providerType}</Badge>
                       </div>
                     ) : (
                       <p className="mt-2 text-xs text-muted-foreground">

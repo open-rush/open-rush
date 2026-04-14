@@ -5,8 +5,6 @@ import type { DbClient } from '@open-rush/db';
 const DEFAULT_AGENT = {
   name: 'Web Builder',
   description: 'Build and iterate on web applications in the project workspace.',
-  providerType: 'claude-code' as const,
-  model: 'claude-sonnet-4-6',
   systemPrompt:
     'You are a web development assistant. Help users build web applications using modern technologies. You can create, edit, and manage files in the project workspace.',
   maxSteps: 30,
@@ -55,8 +53,6 @@ export async function resolveAgentIdForProject(options: {
     status: 'active',
     name: DEFAULT_AGENT.name,
     description: DEFAULT_AGENT.description,
-    providerType: DEFAULT_AGENT.providerType,
-    model: DEFAULT_AGENT.model,
     systemPrompt: DEFAULT_AGENT.systemPrompt,
     maxSteps: DEFAULT_AGENT.maxSteps,
     deliveryMode: DEFAULT_AGENT.deliveryMode,

@@ -43,8 +43,6 @@ function makeAgent(overrides: Partial<AgentConfig> = {}): AgentConfig {
     name: 'Test Agent',
     scope: 'project',
     status: 'active',
-    providerType: 'claude-code',
-    model: 'claude-sonnet-4-6',
     systemPrompt: 'You are a test agent.',
     maxSteps: 30,
     deliveryMode: 'chat',
@@ -88,8 +86,8 @@ describe('AgentRegistry', () => {
     it('updates agent config', async () => {
       const config = makeAgent();
       await registry.createAgent(config);
-      const updated = await registry.updateAgent(config.id, { model: 'claude-opus-4-6' });
-      expect(updated.model).toBe('claude-opus-4-6');
+      const updated = await registry.updateAgent(config.id, { name: 'Renamed Agent' });
+      expect(updated.name).toBe('Renamed Agent');
     });
 
     it('rejects changing to builtin scope', async () => {
@@ -124,21 +122,19 @@ describe('AgentRegistry', () => {
     });
 
     it('project overrides builtin with same id', async () => {
-      await store.create(
-        makeAgent({ id: 'web-builder', scope: 'builtin', model: 'claude-sonnet-4-6' })
-      );
+      await store.create(makeAgent({ id: 'web-builder', scope: 'builtin', name: 'Web Builder' }));
       await store.create(
         makeAgent({
           id: 'web-builder',
           scope: 'project',
-          model: 'claude-opus-4-6',
+          name: 'Custom Builder',
           projectId,
         })
       );
 
       const agents = await registry.getAgentsForProject(projectId);
       const wb = agents.find((a) => a.id === 'web-builder');
-      expect(wb?.model).toBe('claude-opus-4-6');
+      expect(wb?.name).toBe('Custom Builder');
     });
   });
 

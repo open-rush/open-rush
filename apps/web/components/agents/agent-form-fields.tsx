@@ -1,6 +1,7 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import {
   Select,
   SelectContent,
@@ -17,13 +18,14 @@ import {
   normalizeAgentMaxSteps,
 } from './agent-form';
 
-const PROVIDER_OPTIONS: AgentFormState['providerType'][] = ['claude-code', 'gemini', 'custom'];
 const DELIVERY_MODE_OPTIONS: AgentFormState['deliveryMode'][] = ['chat', 'workspace'];
 
 interface AgentFormFieldsProps {
   form: AgentFormState;
   idPrefix: string;
   promptRows?: number;
+  skillOptions?: MultiSelectOption[];
+  mcpOptions?: MultiSelectOption[];
   onChange: AgentFormChangeHandler;
 }
 
@@ -31,31 +33,21 @@ export function AgentFormFields({
   form,
   idPrefix,
   promptRows = 8,
+  skillOptions = [],
+  mcpOptions = [],
   onChange,
 }: AgentFormFieldsProps) {
   return (
     <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <label htmlFor={`${idPrefix}-name`} className="text-sm text-muted-foreground">
-            Name
-          </label>
-          <Input
-            id={`${idPrefix}-name`}
-            value={form.name}
-            onChange={(event) => onChange('name', event.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <label htmlFor={`${idPrefix}-model`} className="text-sm text-muted-foreground">
-            Model
-          </label>
-          <Input
-            id={`${idPrefix}-model`}
-            value={form.model}
-            onChange={(event) => onChange('model', event.target.value)}
-          />
-        </div>
+      <div className="space-y-2">
+        <label htmlFor={`${idPrefix}-name`} className="text-sm text-muted-foreground">
+          Name
+        </label>
+        <Input
+          id={`${idPrefix}-name`}
+          value={form.name}
+          onChange={(event) => onChange('name', event.target.value)}
+        />
       </div>
 
       <div className="space-y-2">
@@ -70,33 +62,10 @@ export function AgentFormFields({
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <label htmlFor={`${idPrefix}-provider`} className="text-sm text-muted-foreground">
-            Provider
-          </label>
-          <Select
-            value={form.providerType}
-            onValueChange={(value) =>
-              onChange('providerType', value as AgentFormState['providerType'])
-            }
-          >
-            <SelectTrigger id={`${idPrefix}-provider`} className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PROVIDER_OPTIONS.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor={`${idPrefix}-delivery`} className="text-sm text-muted-foreground">
-            Delivery
+            Delivery Mode
           </label>
           <Select
             value={form.deliveryMode}
@@ -147,6 +116,32 @@ export function AgentFormFields({
           value={form.systemPrompt}
           onChange={(event) => onChange('systemPrompt', event.target.value)}
         />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          {/* biome-ignore lint/a11y/noLabelWithoutControl: MultiSelect is a custom composite widget */}
+          <label className="text-sm text-muted-foreground">Skills</label>
+          <MultiSelect
+            options={skillOptions}
+            selected={form.skills}
+            onChange={(values) => onChange('skills', values)}
+            placeholder="Select skills..."
+            emptyText="No skills available."
+          />
+        </div>
+
+        <div className="space-y-2">
+          {/* biome-ignore lint/a11y/noLabelWithoutControl: MultiSelect is a custom composite widget */}
+          <label className="text-sm text-muted-foreground">MCP Servers</label>
+          <MultiSelect
+            options={mcpOptions}
+            selected={form.mcpServers}
+            onChange={(values) => onChange('mcpServers', values)}
+            placeholder="Select MCP servers..."
+            emptyText="No MCP servers available."
+          />
+        </div>
       </div>
     </div>
   );

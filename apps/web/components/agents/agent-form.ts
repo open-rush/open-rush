@@ -3,9 +3,9 @@ import type { Agent } from '@open-rush/contracts';
 export interface AgentFormState {
   name: string;
   description: string;
-  providerType: 'claude-code' | 'gemini' | 'custom';
-  model: string;
   systemPrompt: string;
+  skills: string[];
+  mcpServers: string[];
   maxSteps: number;
   deliveryMode: 'chat' | 'workspace';
 }
@@ -20,9 +20,9 @@ export const DEFAULT_AGENT_MAX_STEPS = 30;
 export const EMPTY_AGENT_FORM: AgentFormState = {
   name: '',
   description: '',
-  providerType: 'claude-code',
-  model: '',
   systemPrompt: '',
+  skills: [],
+  mcpServers: [],
   maxSteps: DEFAULT_AGENT_MAX_STEPS,
   deliveryMode: 'chat',
 };
@@ -31,9 +31,9 @@ export function toAgentFormState(agent: Agent): AgentFormState {
   return {
     name: agent.name,
     description: agent.description ?? '',
-    providerType: agent.providerType,
-    model: agent.model ?? '',
     systemPrompt: agent.systemPrompt ?? '',
+    skills: agent.skills ?? [],
+    mcpServers: agent.mcpServers ?? [],
     maxSteps: agent.maxSteps,
     deliveryMode: agent.deliveryMode,
   };
@@ -54,9 +54,9 @@ export function toAgentPayload(
   projectId: string;
   name: string;
   description: string | null;
-  providerType: AgentFormState['providerType'];
-  model: string | null;
   systemPrompt: string | null;
+  skills: string[];
+  mcpServers: string[];
   maxSteps: number;
   deliveryMode: AgentFormState['deliveryMode'];
 } {
@@ -64,9 +64,9 @@ export function toAgentPayload(
     projectId,
     name: form.name.trim(),
     description: form.description.trim() || null,
-    providerType: form.providerType,
-    model: form.model.trim() || null,
     systemPrompt: form.systemPrompt.trim() || null,
+    skills: form.skills.filter((s) => s.trim()),
+    mcpServers: form.mcpServers.filter((s) => s.trim()),
     maxSteps: normalizeAgentMaxSteps(form.maxSteps),
     deliveryMode: form.deliveryMode,
   };

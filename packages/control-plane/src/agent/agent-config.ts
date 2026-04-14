@@ -8,8 +8,6 @@ export interface AgentConfig {
   status: 'active' | 'inactive';
   description?: string | null;
   icon?: string | null;
-  providerType: string;
-  model: string | null;
   systemPrompt: string | null;
   mcpServers?: string[];
   skills?: string[];
@@ -39,11 +37,11 @@ const BUILTIN_AGENTS: AgentConfig[] = [
     status: 'active',
     description: 'Build and iterate on web applications in the project workspace.',
     icon: 'code',
-    providerType: 'claude-code',
-    model: 'claude-sonnet-4-6',
     systemPrompt:
       'You are a web development assistant. Help users build web applications using modern technologies. You can create, edit, and manage files in the project workspace.',
     allowedTools: ['Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep'],
+    skills: [],
+    mcpServers: [],
     maxSteps: 30,
     deliveryMode: 'workspace',
     isBuiltin: true,

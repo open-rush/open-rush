@@ -82,7 +82,6 @@ export class RunOrchestrator {
         sessionId: runId,
         env: agentContext?.env,
         systemPrompt: agentContext?.systemPrompt,
-        modelId: agentContext?.agentConfig.model ?? undefined,
         allowedTools: agentContext?.agentConfig.allowedTools,
         maxTurns: agentContext?.agentConfig.maxSteps,
       });

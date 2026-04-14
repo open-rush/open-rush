@@ -16,7 +16,6 @@ interface AgentOption {
   id: string;
   name: string;
   description: string | null;
-  providerType: string;
   deliveryMode: 'chat' | 'workspace';
   projectId: string;
   projectName: string;
@@ -273,7 +272,7 @@ export default function HomePage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <div className="text-[12px] font-medium text-foreground">{agent.name}</div>
-                    <Badge variant="outline">{agent.providerType}</Badge>
+                    <Badge variant="outline">{agent.deliveryMode}</Badge>
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-1 line-clamp-3">
                     {getAgentWelcome(agent)}

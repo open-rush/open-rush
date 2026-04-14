@@ -108,8 +108,6 @@ describe('DrizzleAgentConfigStore', () => {
       name: 'Builder',
       scope: 'project',
       status: 'active',
-      providerType: 'claude-code',
-      model: 'claude-sonnet-4-6',
       systemPrompt: 'Build UI safely.',
       maxSteps: 20,
       deliveryMode: 'workspace',
@@ -124,10 +122,10 @@ describe('DrizzleAgentConfigStore', () => {
     expect(listed[0].name).toBe('Builder');
 
     const updated = await store.update(created.id, {
-      model: 'claude-opus-4-6',
+      name: 'Updated Builder',
       allowedTools: ['Read', 'Write'],
     });
-    expect(updated?.model).toBe('claude-opus-4-6');
+    expect(updated?.name).toBe('Updated Builder');
     expect(updated?.allowedTools).toEqual(['Read', 'Write']);
 
     const removed = await store.remove(created.id);

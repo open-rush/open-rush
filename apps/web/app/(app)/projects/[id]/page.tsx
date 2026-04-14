@@ -82,7 +82,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">{currentAgent.name}</Badge>
-                    <Badge variant="outline">{currentAgent.providerType}</Badge>
                     <Badge
                       variant={currentAgent.deliveryMode === 'workspace' ? 'default' : 'outline'}
                     >

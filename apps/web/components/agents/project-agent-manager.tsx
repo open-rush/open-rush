@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import type { MultiSelectOption } from '@/components/ui/multi-select';
 
 interface ProjectAgentManagerProps {
   projectId: string;
@@ -37,6 +38,8 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [skillOptions, setSkillOptions] = useState<MultiSelectOption[]>([]);
+  const [mcpOptions, setMcpOptions] = useState<MultiSelectOption[]>([]);
 
   const selectedAgent = useMemo(
     () => agents.find((agent) => agent.id === selectedAgentId) ?? null,
@@ -47,9 +50,11 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const [agentsRes, currentRes] = await Promise.all([
+      const [agentsRes, currentRes, skillsRes, mcpRes] = await Promise.all([
         fetch(`/api/agents?projectId=${projectId}`),
         fetch(`/api/projects/${projectId}/agent`),
+        fetch(`/api/projects/${projectId}/skills`).catch(() => null),
+        fetch(`/api/projects/${projectId}/mcp`).catch(() => null),
       ]);
 
       const agentsJson = await agentsRes.json();
@@ -69,6 +74,18 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
       setAgents(nextAgents);
       setCurrentAgent(nextCurrentAgent);
       setCurrentBinding(nextBinding);
+
+      if (skillsRes?.ok) {
+        const skillsJson = await skillsRes.json();
+        const skills = (skillsJson.data ?? []) as { name: string }[];
+        setSkillOptions(skills.map((s) => ({ value: s.name, label: s.name })));
+      }
+
+      if (mcpRes?.ok) {
+        const mcpJson = await mcpRes.json();
+        const servers = (mcpJson.data ?? []) as { name: string }[];
+        setMcpOptions(servers.map((s) => ({ value: s.name, label: s.name })));
+      }
 
       setSelectedAgentId((prev) => {
         if (prev && nextAgents.some((agent) => agent.id === prev)) {
@@ -223,7 +240,6 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
                 <div className="flex items-center gap-2">
                   <Bot className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">{currentAgent.name}</span>
-                  <Badge variant="secondary">{currentAgent.providerType}</Badge>
                   <Badge
                     variant={currentAgent.deliveryMode === 'workspace' ? 'default' : 'outline'}
                   >
@@ -286,7 +302,6 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{agent.name}</span>
                             {isCurrent ? <Badge>Current</Badge> : null}
-                            <Badge variant="secondary">{agent.providerType}</Badge>
                           </div>
                           <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                             {agent.description || 'No description provided.'}
@@ -337,7 +352,13 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <AgentFormFields form={form} idPrefix="agent" onChange={handleChange} />
+            <AgentFormFields
+              form={form}
+              idPrefix="agent"
+              skillOptions={skillOptions}
+              mcpOptions={mcpOptions}
+              onChange={handleChange}
+            />
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             {message ? <p className="text-sm text-emerald-600">{message}</p> : null}

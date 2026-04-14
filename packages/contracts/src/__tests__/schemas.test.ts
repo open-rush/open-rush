@@ -116,7 +116,6 @@ describe('Agent', () => {
   it('parses with defaults', () => {
     const a = Agent.parse(validAgent);
     expect(a.status).toBe('active');
-    expect(a.providerType).toBe('claude-code');
     expect(a.deliveryMode).toBe('chat');
     expect(a.customTitle).toBeNull();
     expect(a.config).toBeNull();
@@ -143,7 +142,7 @@ describe('CreateAgentRequest', () => {
       name: 'Research Agent',
     });
     expect(req.projectId).toBe(UUID);
-    expect(req.providerType).toBe('claude-code');
+    expect(req.deliveryMode).toBe('chat');
   });
 });
 

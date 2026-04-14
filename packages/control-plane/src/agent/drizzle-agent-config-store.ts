@@ -14,8 +14,6 @@ function mapRow(row: AgentRow): AgentConfig {
     status: row.status as AgentConfig['status'],
     description: row.description,
     icon: row.icon,
-    providerType: row.providerType,
-    model: row.model,
     systemPrompt: row.systemPrompt,
     allowedTools: row.allowedTools ?? [],
     skills: row.skills ?? [],
@@ -65,8 +63,7 @@ export class DrizzleAgentConfigStore implements AgentConfigStore {
         name: config.name,
         description: config.description ?? null,
         icon: config.icon ?? null,
-        providerType: config.providerType,
-        model: config.model ?? null,
+        providerType: 'claude-code',
         systemPrompt: config.systemPrompt ?? null,
         allowedTools: config.allowedTools ?? [],
         skills: config.skills ?? [],
@@ -86,8 +83,6 @@ export class DrizzleAgentConfigStore implements AgentConfigStore {
     if (update.name !== undefined) updates.name = update.name;
     if (update.description !== undefined) updates.description = update.description;
     if (update.icon !== undefined) updates.icon = update.icon;
-    if (update.providerType !== undefined) updates.providerType = update.providerType;
-    if (update.model !== undefined) updates.model = update.model;
     if (update.systemPrompt !== undefined) updates.systemPrompt = update.systemPrompt;
     if (update.allowedTools !== undefined) updates.allowedTools = update.allowedTools;
     if (update.skills !== undefined) updates.skills = update.skills;

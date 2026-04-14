@@ -1,7 +1,7 @@
 'use client';
 
 import type { Agent } from '@open-rush/contracts';
-import { Bot, Cpu, Loader2, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { Bot, Loader2, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -14,14 +14,7 @@ import {
 import { AgentFormFields } from '@/components/agents/agent-form-fields';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import type { MultiSelectOption } from '@/components/ui/multi-select';
 import {
   Select,
   SelectContent,
@@ -55,6 +49,8 @@ function AgentEditorDialog({
   form,
   mode,
   saving,
+  skillOptions,
+  mcpOptions,
   onChange,
   onSubmit,
 }: {
@@ -64,6 +60,8 @@ function AgentEditorDialog({
   form: AgentFormState;
   mode: 'create' | 'edit';
   saving: boolean;
+  skillOptions: MultiSelectOption[];
+  mcpOptions: MultiSelectOption[];
   onChange: AgentFormChangeHandler;
   onSubmit: () => void;
 }) {
@@ -77,7 +75,14 @@ function AgentEditorDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <AgentFormFields form={form} idPrefix="studio-agent" promptRows={10} onChange={onChange} />
+        <AgentFormFields
+          form={form}
+          idPrefix="studio-agent"
+          promptRows={10}
+          skillOptions={skillOptions}
+          mcpOptions={mcpOptions}
+          onChange={onChange}
+        />
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -106,6 +111,8 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const [form, setForm] = useState<AgentFormState>(EMPTY_AGENT_FORM);
+  const [skillOptions, setSkillOptions] = useState<MultiSelectOption[]>([]);
+  const [mcpOptions, setMcpOptions] = useState<MultiSelectOption[]>([]);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -115,6 +122,8 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
   const load = useCallback(async () => {
     if (!selectedProjectId) {
       setAgents([]);
+      setSkillOptions([]);
+      setMcpOptions([]);
       setLoading(false);
       return;
     }
@@ -122,14 +131,29 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
     setLoading(true);
     setError(null);
     try {
-      const agentsRes = await fetch(`/api/agents?projectId=${selectedProjectId}`);
-      const agentsJson = await agentsRes.json();
+      const [agentsRes, skillsRes, mcpRes] = await Promise.all([
+        fetch(`/api/agents?projectId=${selectedProjectId}`),
+        fetch(`/api/projects/${selectedProjectId}/skills`).catch(() => null),
+        fetch(`/api/projects/${selectedProjectId}/mcp`).catch(() => null),
+      ]);
 
+      const agentsJson = await agentsRes.json();
       if (!agentsRes.ok) {
         throw new Error(agentsJson.error ?? 'Failed to load agents');
       }
-
       setAgents((agentsJson.data ?? []) as Agent[]);
+
+      if (skillsRes?.ok) {
+        const skillsJson = await skillsRes.json();
+        const skills = (skillsJson.data ?? []) as { name: string }[];
+        setSkillOptions(skills.map((s) => ({ value: s.name, label: s.name })));
+      }
+
+      if (mcpRes?.ok) {
+        const mcpJson = await mcpRes.json();
+        const servers = (mcpJson.data ?? []) as { name: string }[];
+        setMcpOptions(servers.map((s) => ({ value: s.name, label: s.name })));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load agents');
     } finally {
@@ -288,10 +312,6 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
                         </div>
                         <div className="min-w-0">
                           <CardTitle className="truncate">{agent.name}</CardTitle>
-                          <CardDescription className="mt-0.5 flex items-center gap-1">
-                            <Cpu className="h-3.5 w-3.5" />
-                            {agent.providerType}
-                          </CardDescription>
                         </div>
                       </div>
                     </div>
@@ -303,8 +323,13 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary">{agent.deliveryMode}</Badge>
-                    {agent.model ? <Badge variant="outline">{agent.model}</Badge> : null}
                     <Badge variant="outline">{agent.maxSteps} steps</Badge>
+                    {agent.skills.length > 0 ? (
+                      <Badge variant="outline">{agent.skills.length} skills</Badge>
+                    ) : null}
+                    {agent.mcpServers.length > 0 ? (
+                      <Badge variant="outline">{agent.mcpServers.length} MCPs</Badge>
+                    ) : null}
                   </div>
                 </CardContent>
                 <CardFooter className="justify-between gap-2">
@@ -356,6 +381,8 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
         form={form}
         mode={editingAgentId ? 'edit' : 'create'}
         saving={saving}
+        skillOptions={skillOptions}
+        mcpOptions={mcpOptions}
         onChange={handleChange}
         onSubmit={() => void handleSave()}
       />

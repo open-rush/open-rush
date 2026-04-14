@@ -35,39 +35,32 @@ export default function ChatPage() {
 
   const projectId = searchParams.get('projectId') ?? undefined;
   const conversationId = params.id;
-  const agentId = searchParams.get('agentId') ?? undefined;
   const agentName = searchParams.get('agent') || 'Builder';
   const initialPrompt = searchParams.get('prompt')?.trim() ?? '';
 
-  // Agent metadata (provider label = runtime + backend)
+  // Agent metadata (provider label = backend connection mode)
   const [providerLabel, setProviderLabel] = useState('Claude Code');
   useEffect(() => {
     let cancelled = false;
-    const runtimeLabels: Record<string, string> = { 'claude-code': 'Claude Code' };
     const backendLabels: Record<string, string> = {
       bedrock: 'Bedrock',
       anthropic: 'Anthropic API',
       custom: 'Custom Endpoint',
     };
 
-    Promise.all([
-      agentId
-        ? fetch(`/api/agents/${encodeURIComponent(agentId)}`).then((r) => (r.ok ? r.json() : null))
-        : null,
-      fetch('/api/health').then((r) => (r.ok ? r.json() : null)),
-    ])
-      .then(([agentJson, healthJson]) => {
+    fetch('/api/health')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((healthJson) => {
         if (cancelled) return;
-        const runtime = runtimeLabels[agentJson?.data?.providerType] ?? 'Claude Code';
         const backend = backendLabels[healthJson?.provider] ?? '';
-        setProviderLabel(backend ? `${runtime} · ${backend}` : runtime);
+        setProviderLabel(backend ? `Claude Code · ${backend}` : 'Claude Code');
       })
       .catch(() => {});
 
     return () => {
       cancelled = true;
     };
-  }, [agentId]);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Transport & useChat
