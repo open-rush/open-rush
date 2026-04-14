@@ -1,3 +1,4 @@
+import { applyMMR, applyTimeDecay } from './hybrid-search.js';
 import type {
   CreateMemoryInput,
   MemoryEntry,
@@ -68,11 +69,26 @@ export class MemoryStore {
       this.db.textSearch(options.agentId, options.projectId, options.query, limit * 2),
     ]);
 
-    const merged = this.hybridMerge(vectorResults, textResults, limit);
+    let merged = this.hybridMerge(vectorResults, textResults, limit);
 
     if (options.categories && options.categories.length > 0) {
       const cats = options.categories;
-      return merged.filter((r) => cats.includes(r.entry.category));
+      merged = merged.filter((r) => cats.includes(r.entry.category));
+    }
+
+    // Optional: apply time decay
+    if (options.decayHalfLifeDays !== undefined) {
+      merged = applyTimeDecay(merged, options.decayHalfLifeDays);
+      merged.sort((a, b) => b.score - a.score);
+    }
+
+    // Optional: apply MMR diversity re-ranking
+    if (options.mmrLambda !== undefined) {
+      const candidatesWithEmbedding = merged.map((r) => ({
+        ...r,
+        embedding: r.entry.embedding,
+      }));
+      merged = applyMMR(candidatesWithEmbedding, limit, options.mmrLambda);
     }
 
     for (const result of merged) {

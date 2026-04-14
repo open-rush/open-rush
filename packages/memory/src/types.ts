@@ -29,6 +29,10 @@ export interface MemorySearchOptions {
   limit?: number;
   minScore?: number;
   categories?: MemoryCategory[];
+  /** Time decay half-life in days. When set, older memories score lower. */
+  decayHalfLifeDays?: number;
+  /** MMR lambda (0-1). When set, re-ranks for diversity. Default 0.8 = high relevance. */
+  mmrLambda?: number;
 }
 
 export interface MemorySearchResult {

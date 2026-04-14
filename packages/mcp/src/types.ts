@@ -34,3 +34,13 @@ export interface McpResource {
   description?: string;
   mimeType?: string;
 }
+
+export interface McpToolCallResult {
+  content?: Array<{ type: string; text?: string; [key: string]: unknown }>;
+  isError?: boolean;
+}
+
+export interface McpClientOptions {
+  timeout?: number;
+  verbose?: boolean;
+}
