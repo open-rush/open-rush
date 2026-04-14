@@ -3,7 +3,8 @@
 
 import type { ChatStatus, DynamicToolUIPart, UIMessage } from 'ai';
 import { memo } from 'react';
-import { Reasoning } from '@/components/ai-elements/reasoning';
+import { Reasoning, ReasoningTrigger, ReasoningContent } from '@/components/ai-elements/reasoning';
+import { MessageResponse } from '@/components/ai-elements/message';
 import type { ToolRegistry } from './tool-registry';
 import { defaultToolRegistry } from './tools';
 import { GenericTool } from './tools/generic-tool';
@@ -34,18 +35,23 @@ export const PartRenderer = memo(
   }: PartRendererProps) {
     const isStreaming = status === 'streaming';
 
-    // Text content — render as markdown (plain for now, streamdown later)
+    // Text content — render as markdown via Streamdown
     if (part.type === 'text') {
       return (
-        <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap break-words">
+        <MessageResponse isAnimating={isStreaming && isLastMessage}>
           {part.text}
-        </div>
+        </MessageResponse>
       );
     }
 
-    // Reasoning / chain-of-thought
+    // Reasoning / chain-of-thought — collapsible thinking block
     if (part.type === 'reasoning') {
-      return <Reasoning isStreaming={isStreaming}>{part.text}</Reasoning>;
+      return (
+        <Reasoning isStreaming={isStreaming && isLastMessage}>
+          <ReasoningTrigger />
+          <ReasoningContent>{part.text}</ReasoningContent>
+        </Reasoning>
+      );
     }
 
     // Step start/end markers — skip rendering
