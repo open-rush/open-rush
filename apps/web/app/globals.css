@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "streamdown/styles.css";
 @source "./**/*.{ts,tsx}";
 @source "../components/**/*.{ts,tsx}";
 @source "../lib/**/*.{ts,tsx}";
