@@ -9,8 +9,8 @@ export async function GET(req: Request) {
 
   const SORT_WHITELIST = ['updated_at', 'star_count', 'name', 'created_at'] as const;
   const rawSort = url.searchParams.get('sortBy') ?? 'updated_at';
-  const sortBy = SORT_WHITELIST.includes(rawSort as typeof SORT_WHITELIST[number])
-    ? (rawSort as typeof SORT_WHITELIST[number])
+  const sortBy = SORT_WHITELIST.includes(rawSort as (typeof SORT_WHITELIST)[number])
+    ? (rawSort as (typeof SORT_WHITELIST)[number])
     : 'updated_at';
   const limit = Math.min(Math.max(Number(url.searchParams.get('limit') ?? 50) || 50, 1), 100);
   const offset = Math.max(Number(url.searchParams.get('offset') ?? 0) || 0, 0);

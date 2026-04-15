@@ -49,9 +49,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .set({ installCount: sql`${skillRegistry.installCount} + 1` })
     .where(eq(skillRegistry.name, body.skillName));
 
-  return apiSuccess({
-    installed: true,
-    skillName: registrySkill.name,
-    projectId,
-  }, 201);
+  return apiSuccess(
+    {
+      installed: true,
+      skillName: registrySkill.name,
+      projectId,
+    },
+    201
+  );
 }

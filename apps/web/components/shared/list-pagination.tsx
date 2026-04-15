@@ -28,7 +28,11 @@ export function ListPagination({
   } else {
     pages.push(1);
     if (currentPage > 3) pages.push('...');
-    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+    for (
+      let i = Math.max(2, currentPage - 1);
+      i <= Math.min(totalPages - 1, currentPage + 1);
+      i++
+    ) {
       pages.push(i);
     }
     if (currentPage < totalPages - 2) pages.push('...');
@@ -68,6 +72,7 @@ export function ListPagination({
 
         {pages.map((page, i) =>
           page === '...' ? (
+            // biome-ignore lint/suspicious/noArrayIndexKey: ellipsis items have no stable key
             <span key={`ellipsis-${i}`} className="px-2 text-xs text-muted-foreground">
               ...
             </span>
@@ -84,7 +89,7 @@ export function ListPagination({
             >
               {page}
             </button>
-          ),
+          )
         )}
 
         <button

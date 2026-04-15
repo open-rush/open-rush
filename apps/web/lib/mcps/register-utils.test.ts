@@ -20,38 +20,53 @@ describe('parseMcpJsonConfig', () => {
   });
 
   it('解析单个 server 格式', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({ 'swagger-mcp': { command: 'npx', args: ['-y', 'swagger-mcp@latest'] } }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({ 'swagger-mcp': { command: 'npx', args: ['-y', 'swagger-mcp@latest'] } })
+    );
     expect(result.servers).toHaveLength(1);
     expect(result.servers[0].transportType).toBe('stdio');
   });
 
   it('解析 HTTP/SSE 配置', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({ 'api-server': { url: 'https://api.example.com/mcp', headers: { Authorization: 'Bearer xxx' } } }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({
+        'api-server': {
+          url: 'https://api.example.com/mcp',
+          headers: { Authorization: 'Bearer xxx' },
+        },
+      })
+    );
     expect(result.servers[0].transportType).toBe('http');
   });
 
   it('从 URL 模式检测 SSE transport', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({ 'sse-server': { url: 'https://api.example.com/sse' } }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({ 'sse-server': { url: 'https://api.example.com/sse' } })
+    );
     expect(result.servers[0].transportType).toBe('sse');
   });
 
   it('解析多个 server', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({
-      mcpServers: {
-        'server-a': { command: 'npx', args: ['-y', 'pkg-a'] },
-        'server-b': { url: 'https://api.example.com/mcp' },
-      },
-    }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({
+        mcpServers: {
+          'server-a': { command: 'npx', args: ['-y', 'pkg-a'] },
+          'server-b': { url: 'https://api.example.com/mcp' },
+        },
+      })
+    );
     expect(result.servers).toHaveLength(2);
   });
 
   it('一个 server 无效时整体失败', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({
-      mcpServers: {
-        valid: { command: 'npx', args: ['-y', 'ok-server'] },
-        invalid: { args: ['-y', 'missing-command'] },
-      },
-    }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({
+        mcpServers: {
+          valid: { command: 'npx', args: ['-y', 'ok-server'] },
+          invalid: { args: ['-y', 'missing-command'] },
+        },
+      })
+    );
     expect(result.servers).toHaveLength(0);
     expect(result.error).toContain('服务器 "invalid"');
   });
@@ -62,12 +77,18 @@ describe('parseMcpJsonConfig', () => {
   });
 
   it('type 与实际配置不一致时失败', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({ mcpServers: { mismatch: { type: 'stdio', url: 'https://example.com/sse' } } }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({
+        mcpServers: { mismatch: { type: 'stdio', url: 'https://example.com/sse' } },
+      })
+    );
     expect(result.error).toContain('type=stdio 与实际配置不一致');
   });
 
   it('command 和 url 同时存在时失败', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({ mcpServers: { conflict: { command: 'npx', url: 'https://example.com' } } }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({ mcpServers: { conflict: { command: 'npx', url: 'https://example.com' } } })
+    );
     expect(result.error).toContain('不能同时包含 command 和 url');
   });
 
@@ -80,7 +101,9 @@ describe('parseMcpJsonConfig', () => {
   });
 
   it('生成 displayName', () => {
-    const result = parseMcpJsonConfig(JSON.stringify({ 'my-cool-server': { command: 'node', args: ['server.js'] } }));
+    const result = parseMcpJsonConfig(
+      JSON.stringify({ 'my-cool-server': { command: 'node', args: ['server.js'] } })
+    );
     expect(result.servers[0].displayName).toBe('My Cool Server');
   });
 
@@ -138,10 +161,22 @@ describe('parseCommandLine', () => {
 // ---------------------------------------------------------------------------
 
 describe('toSlug', () => {
-  it('转小写', () => { expect(toSlug('MyServer')).toBe('myserver'); });
-  it('特殊字符替换为连字符', () => { expect(toSlug('my server@v2')).toBe('my-server-v2'); });
-  it('合并连续连字符', () => { expect(toSlug('my--server---name')).toBe('my-server-name'); });
-  it('去除首尾连字符', () => { expect(toSlug('-my-server-')).toBe('my-server'); });
-  it('截断到 64 字符', () => { expect(toSlug('a'.repeat(100)).length).toBeLessThanOrEqual(64); });
-  it('空字符串', () => { expect(toSlug('')).toBe(''); });
+  it('转小写', () => {
+    expect(toSlug('MyServer')).toBe('myserver');
+  });
+  it('特殊字符替换为连字符', () => {
+    expect(toSlug('my server@v2')).toBe('my-server-v2');
+  });
+  it('合并连续连字符', () => {
+    expect(toSlug('my--server---name')).toBe('my-server-name');
+  });
+  it('去除首尾连字符', () => {
+    expect(toSlug('-my-server-')).toBe('my-server');
+  });
+  it('截断到 64 字符', () => {
+    expect(toSlug('a'.repeat(100)).length).toBeLessThanOrEqual(64);
+  });
+  it('空字符串', () => {
+    expect(toSlug('')).toBe('');
+  });
 });

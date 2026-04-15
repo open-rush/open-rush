@@ -70,7 +70,7 @@ describe('agent-worker server', () => {
 
     function mockStreamTextSuccess() {
       const mockResult = {
-        toTextStreamResponse: vi.fn(() => new Response('streamed text')),
+        toUIMessageStreamResponse: vi.fn(() => new Response('streamed text')),
         response: Promise.resolve({}),
       };
       (streamText as Mock).mockReturnValue(mockResult);
@@ -117,7 +117,7 @@ describe('agent-worker server', () => {
       expect(callArgs.prompt).toBe('write hello world');
       expect(callArgs.model).toBe('mock-model');
       expect(callArgs.abortSignal).toBeInstanceOf(AbortSignal);
-      expect(mockResult.toTextStreamResponse).toHaveBeenCalledOnce();
+      expect(mockResult.toUIMessageStreamResponse).toHaveBeenCalledOnce();
     });
 
     it('extracts the last user message from messages array', async () => {
@@ -303,7 +303,7 @@ describe('agent-worker server', () => {
       // Mock streamText to return a result whose response never resolves,
       // keeping the session in activeSessions
       const mockResult = {
-        toTextStreamResponse: vi.fn(() => new Response('stream')),
+        toUIMessageStreamResponse: vi.fn(() => new Response('stream')),
         response: new Promise(() => {}), // never resolves
       };
       (streamText as Mock).mockReturnValue(mockResult);

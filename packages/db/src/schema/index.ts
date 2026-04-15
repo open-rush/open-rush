@@ -14,8 +14,8 @@ export { runs } from './runs.js';
 export { sandboxes } from './sandboxes.js';
 export { sessions } from './sessions.js';
 export {
-  skillGroups,
   skillGroupMembers,
+  skillGroups,
   skillRegistry,
   skillStars,
 } from './skill-registry.js';

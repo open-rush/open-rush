@@ -3,7 +3,7 @@ import { getDbClient } from '@open-rush/db';
 
 import { apiError, apiSuccess, requireAuth } from '@/lib/api-utils';
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await requireAuth();
   const { id: name } = await params;
 

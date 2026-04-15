@@ -127,14 +127,17 @@ export async function POST(req: Request) {
   // Update latest version
   await service.update(name, { sourceUrl: `s3://${artifactPrefix}` });
 
-  return apiSuccess({
-    name,
-    version,
-    integrity,
-    artifactPrefix,
-    fileCount: files.length,
-    skillMdFound: !!mdContent,
-  }, 201);
+  return apiSuccess(
+    {
+      name,
+      version,
+      integrity,
+      artifactPrefix,
+      fileCount: files.length,
+      skillMdFound: !!mdContent,
+    },
+    201
+  );
 }
 
 function getContentType(filename: string): string {

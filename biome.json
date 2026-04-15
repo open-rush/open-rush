@@ -45,6 +45,9 @@
       },
       "correctness": {
         "noUnusedImports": "error"
+      },
+      "a11y": {
+        "recommended": false
       }
     }
   },

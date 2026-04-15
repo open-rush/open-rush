@@ -108,7 +108,13 @@ function normalizeExplicitTransportType(typeValue: unknown): McpTransportType | 
   const normalized = typeValue.trim().toLowerCase();
   if (normalized === 'stdio') return 'stdio';
   if (normalized === 'sse') return 'sse';
-  if (normalized === 'http' || normalized === 'streamablehttp' || normalized === 'streamable-http' || normalized === 'streamable_http') return 'http';
+  if (
+    normalized === 'http' ||
+    normalized === 'streamablehttp' ||
+    normalized === 'streamable-http' ||
+    normalized === 'streamable_http'
+  )
+    return 'http';
   return null;
 }
 
@@ -161,7 +167,10 @@ function extractServersFromObject(obj: Record<string, unknown>): {
         : inferRemoteTransportType(String(config.url));
 
     if (explicitType && explicitType !== transportType) {
-      return { servers: [], error: `服务器 "${name}" 的 type=${String(config.type)} 与实际配置不一致` };
+      return {
+        servers: [],
+        error: `服务器 "${name}" 的 type=${String(config.type)} 与实际配置不一致`,
+      };
     }
 
     if (transportType === 'stdio') {
@@ -193,7 +202,10 @@ function extractServersFromObject(obj: Record<string, unknown>): {
 
     servers.push({
       name,
-      displayName: name.split(/[-_]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      displayName: name
+        .split(/[-_]/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' '),
       transportType,
       serverConfig: config,
     });
@@ -214,7 +226,10 @@ function tokenize(input: string): string[] {
     } else if (char === '"' || char === "'") {
       inQuote = char;
     } else if (char === ' ' || char === '\t') {
-      if (current) { tokens.push(current); current = ''; }
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
     } else {
       current += char;
     }
@@ -225,7 +240,9 @@ function tokenize(input: string): string[] {
 
 function inferNameFromCommand(command: string, args: string[]): string {
   if (command === 'npx') {
-    const packageArg = args.find((a) => !a.startsWith('-') && (a.includes('/') || a.includes('@') || !a.startsWith('.')));
+    const packageArg = args.find(
+      (a) => !a.startsWith('-') && (a.includes('/') || a.includes('@') || !a.startsWith('.'))
+    );
     if (packageArg) return toSlug(packageArg.replace(/@[^/]*\//, '').replace(/@.*$/, ''));
   }
   if (command === 'uvx') {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   extractDescriptionFromFrontmatter,
+  parseFrontmatter,
   parseGitHubUrl,
   parseGitLabUrl,
-  parseFrontmatter,
   sourceUrlToSkillMdRawUrl,
   stripFrontmatter,
 } from './skill-md-utils';
@@ -15,25 +15,39 @@ import {
 describe('parseGitHubUrl', () => {
   it('解析标准 GitHub URL', () => {
     expect(parseGitHubUrl('https://github.com/owner/repo')).toEqual({
-      owner: 'owner', repo: 'repo', branch: 'main', path: '',
+      owner: 'owner',
+      repo: 'repo',
+      branch: 'main',
+      path: '',
     });
   });
 
   it('解析带 branch 的 URL', () => {
     expect(parseGitHubUrl('https://github.com/owner/repo/tree/develop')).toEqual({
-      owner: 'owner', repo: 'repo', branch: 'develop', path: '',
+      owner: 'owner',
+      repo: 'repo',
+      branch: 'develop',
+      path: '',
     });
   });
 
   it('解析带子目录路径的 URL', () => {
-    expect(parseGitHubUrl('https://github.com/kanyun-inc/octo-cli/tree/main/skills/octopus-rum')).toEqual({
-      owner: 'kanyun-inc', repo: 'octo-cli', branch: 'main', path: 'skills/octopus-rum',
+    expect(
+      parseGitHubUrl('https://github.com/kanyun-inc/octo-cli/tree/main/skills/octopus-rum')
+    ).toEqual({
+      owner: 'kanyun-inc',
+      repo: 'octo-cli',
+      branch: 'main',
+      path: 'skills/octopus-rum',
     });
   });
 
   it('解析 .git 后缀的 URL', () => {
     expect(parseGitHubUrl('https://github.com/owner/repo.git')).toEqual({
-      owner: 'owner', repo: 'repo', branch: 'main', path: '',
+      owner: 'owner',
+      repo: 'repo',
+      branch: 'main',
+      path: '',
     });
   });
 
@@ -50,19 +64,31 @@ describe('parseGitHubUrl', () => {
 describe('parseGitLabUrl', () => {
   it('解析标准 GitLab URL', () => {
     expect(parseGitLabUrl('https://gitlab.com/owner/repo')).toEqual({
-      host: 'https://gitlab.com', owner: 'owner', repo: 'repo', branch: 'main', path: '',
+      host: 'https://gitlab.com',
+      owner: 'owner',
+      repo: 'repo',
+      branch: 'main',
+      path: '',
     });
   });
 
   it('解析自托管 GitLab URL', () => {
     expect(parseGitLabUrl('https://gitlab-ee.example.com/team/my-skill/-/tree/develop')).toEqual({
-      host: 'https://gitlab-ee.example.com', owner: 'team', repo: 'my-skill', branch: 'develop', path: '',
+      host: 'https://gitlab-ee.example.com',
+      owner: 'team',
+      repo: 'my-skill',
+      branch: 'develop',
+      path: '',
     });
   });
 
   it('解析带路径的 GitLab URL', () => {
     expect(parseGitLabUrl('https://gitlab.com/owner/repo/-/tree/main/path/to/skill')).toEqual({
-      host: 'https://gitlab.com', owner: 'owner', repo: 'repo', branch: 'main', path: 'path/to/skill',
+      host: 'https://gitlab.com',
+      owner: 'owner',
+      repo: 'repo',
+      branch: 'main',
+      path: 'path/to/skill',
     });
   });
 
@@ -78,19 +104,23 @@ describe('parseGitLabUrl', () => {
 describe('sourceUrlToSkillMdRawUrl', () => {
   it('GitHub 根 URL 转换为 raw SKILL.md URL', () => {
     expect(sourceUrlToSkillMdRawUrl('https://github.com/owner/repo')).toBe(
-      'https://raw.githubusercontent.com/owner/repo/main/SKILL.md',
+      'https://raw.githubusercontent.com/owner/repo/main/SKILL.md'
     );
   });
 
   it('GitHub 带 tree path 的 URL 转换', () => {
-    expect(sourceUrlToSkillMdRawUrl('https://github.com/kanyun-inc/octo-cli/tree/main/skills/octopus-rum')).toBe(
-      'https://raw.githubusercontent.com/kanyun-inc/octo-cli/main/skills/octopus-rum/SKILL.md',
+    expect(
+      sourceUrlToSkillMdRawUrl(
+        'https://github.com/kanyun-inc/octo-cli/tree/main/skills/octopus-rum'
+      )
+    ).toBe(
+      'https://raw.githubusercontent.com/kanyun-inc/octo-cli/main/skills/octopus-rum/SKILL.md'
     );
   });
 
   it('GitHub 带自定义分支', () => {
     expect(sourceUrlToSkillMdRawUrl('https://github.com/owner/repo/tree/develop/sub/dir')).toBe(
-      'https://raw.githubusercontent.com/owner/repo/develop/sub/dir/SKILL.md',
+      'https://raw.githubusercontent.com/owner/repo/develop/sub/dir/SKILL.md'
     );
   });
 
@@ -100,7 +130,7 @@ describe('sourceUrlToSkillMdRawUrl', () => {
 
   it('直接 .md URL 原样返回', () => {
     expect(sourceUrlToSkillMdRawUrl('https://cdn.example.com/SKILL.md')).toBe(
-      'https://cdn.example.com/SKILL.md',
+      'https://cdn.example.com/SKILL.md'
     );
   });
 });

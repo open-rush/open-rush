@@ -62,7 +62,9 @@ export function StarButton({
       }`}
       aria-label={starred ? '取消收藏' : '收藏'}
     >
-      <StarIcon className={`${iconSize} transition-all duration-200 ${starred ? 'fill-current' : ''}`} />
+      <StarIcon
+        className={`${iconSize} transition-all duration-200 ${starred ? 'fill-current' : ''}`}
+      />
       <span className="tabular-nums">{count}</span>
     </button>
   );

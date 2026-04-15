@@ -31,21 +31,28 @@ export default function McpStarsPage() {
               description: item.description as string,
               tags: item.tags as string[],
               toolCount: (item.tools as Array<unknown>)?.length ?? 0,
-            })),
+            }))
         );
       }
-    } catch { /* silent */ } finally {
+    } catch {
+      /* silent */
+    } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-[1400px] px-8 py-8">
         <div className="mb-6">
-          <Link href="/mcps" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/mcps"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ArrowLeftIcon className="h-4 w-4" /> MCP Servers
           </Link>
         </div>
@@ -61,15 +68,21 @@ export default function McpStarsPage() {
         </div>
 
         {loading ? (
-          <div className="flex h-[320px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+          <div className="flex h-[320px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         ) : servers.length === 0 ? (
           <div className="flex h-[320px] flex-col items-center justify-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted"><RssIcon className="h-6 w-6 text-muted-foreground" /></div>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <RssIcon className="h-6 w-6 text-muted-foreground" />
+            </div>
             <h3 className="text-sm font-medium">还没有收藏 MCP Servers</h3>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {servers.map((mcp) => <McpCard key={mcp.id} mcp={mcp} onClick={(m) => setDetailId(m.id)} />)}
+            {servers.map((mcp) => (
+              <McpCard key={mcp.id} mcp={mcp} onClick={(m) => setDetailId(m.id)} />
+            ))}
           </div>
         )}
       </div>

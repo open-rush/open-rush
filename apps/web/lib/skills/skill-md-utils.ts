@@ -26,7 +26,7 @@ export interface ParsedGitLabUrl {
 
 export function parseGitHubUrl(sourceUrl: string): ParsedGitHubUrl | null {
   const match = sourceUrl.match(
-    /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+)(?:\/(.+))?)?$/,
+    /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+)(?:\/(.+))?)?$/
   );
   if (!match) return null;
   return {
@@ -39,7 +39,7 @@ export function parseGitHubUrl(sourceUrl: string): ParsedGitHubUrl | null {
 
 export function parseGitLabUrl(sourceUrl: string): ParsedGitLabUrl | null {
   const match = sourceUrl.match(
-    /^(https?:\/\/[^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/-\/tree\/([^/]+))?(?:\/(.+))?$/,
+    /^(https?:\/\/[^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/-\/tree\/([^/]+))?(?:\/(.+))?$/
   );
   if (!match) return null;
   return {
@@ -58,10 +58,7 @@ export function parseGitLabUrl(sourceUrl: string): ParsedGitLabUrl | null {
 /**
  * Convert a GitHub/GitLab page URL to the raw SKILL.md content URL.
  */
-export function sourceUrlToSkillMdRawUrl(
-  sourceUrl: string,
-  sourceType?: string,
-): string | null {
+export function sourceUrlToSkillMdRawUrl(sourceUrl: string, sourceType?: string): string | null {
   // GitHub
   if (sourceType === 'github' || sourceUrl.includes('github.com')) {
     const parsed = parseGitHubUrl(sourceUrl);

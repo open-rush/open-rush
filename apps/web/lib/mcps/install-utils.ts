@@ -26,7 +26,7 @@ export function extractConfigVariables(config: Record<string, unknown>): string[
  */
 function substituteConfigVariables(
   str: string,
-  values: Record<string, string>,
+  values: Record<string, string>
 ): { result: string; consumedKeys: Set<string> } {
   const consumedKeys = new Set<string>();
   const result = str.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)}/g, (match, varName: string) => {
@@ -54,7 +54,7 @@ function substituteConfigVariables(
 export function mergeExtraConfigIntoServerConfig(
   transportType: string,
   serverConfig: Record<string, unknown>,
-  extraConfigValues: Record<string, string>,
+  extraConfigValues: Record<string, string>
 ): Record<string, unknown> {
   const keys = Object.keys(extraConfigValues);
   if (keys.length === 0) return serverConfig;
@@ -63,7 +63,7 @@ export function mergeExtraConfigIntoServerConfig(
   const configStr = JSON.stringify(serverConfig);
   const { result: resolvedStr, consumedKeys } = substituteConfigVariables(
     configStr,
-    extraConfigValues,
+    extraConfigValues
   );
   const resolved = JSON.parse(resolvedStr) as Record<string, unknown>;
 

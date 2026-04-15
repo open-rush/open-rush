@@ -92,7 +92,7 @@ export const skillGroupMembers = pgTable(
     role: varchar('role', { length: 20 }).notNull().default('developer'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [unique('skill_group_members_group_user_idx').on(t.groupId, t.userId)],
+  (t) => [unique('skill_group_members_group_user_idx').on(t.groupId, t.userId)]
 );
 
 // ---------------------------------------------------------------------------
@@ -109,5 +109,5 @@ export const skillStars = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [unique('skill_stars_skill_user_idx').on(t.skillName, t.userId)],
+  (t) => [unique('skill_stars_skill_user_idx').on(t.skillName, t.userId)]
 );

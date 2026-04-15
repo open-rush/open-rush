@@ -31,21 +31,28 @@ export default function SkillStarsPage() {
               version: item.latestVersion as string,
               starCount: item.starCount as number,
               isStarred: true,
-            })),
+            }))
         );
       }
-    } catch { /* silent */ } finally {
+    } catch {
+      /* silent */
+    } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-[1400px] px-8 py-8">
         <div className="mb-6">
-          <Link href="/skills" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            href="/skills"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ArrowLeftIcon className="h-4 w-4" /> Skills
           </Link>
         </div>
@@ -61,7 +68,9 @@ export default function SkillStarsPage() {
         </div>
 
         {loading ? (
-          <div className="flex h-[320px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+          <div className="flex h-[320px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         ) : skills.length === 0 ? (
           <div className="flex h-[320px] flex-col items-center justify-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -72,10 +81,16 @@ export default function SkillStarsPage() {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {skills.map((s) => <SkillCard key={s.name} skill={s} />)}
+            {skills.map((s) => (
+              <SkillCard key={s.name} skill={s} />
+            ))}
           </div>
         ) : (
-          <div className="space-y-2">{skills.map((s) => <SkillListItem key={s.name} skill={s} />)}</div>
+          <div className="space-y-2">
+            {skills.map((s) => (
+              <SkillListItem key={s.name} skill={s} />
+            ))}
+          </div>
         )}
       </div>
     </div>

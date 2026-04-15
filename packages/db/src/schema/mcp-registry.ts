@@ -32,16 +32,23 @@ export const mcpRegistry = pgTable('mcp_registry', {
   /** Transport type: stdio, sse, http */
   transportType: varchar('transport_type', { length: 20 }).notNull(),
   /** Server configuration JSON (command, args, url, env, headers) */
-  serverConfig: jsonb('server_config').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  serverConfig: jsonb('server_config')
+    .$type<Record<string, unknown>>()
+    .notNull()
+    .default(sql`'{}'::jsonb`),
   /** Detected tools from this server */
-  tools: jsonb('tools').$type<Array<{ name: string; description: string }>>().notNull().default(sql`'[]'::jsonb`),
+  tools: jsonb('tools')
+    .$type<Array<{ name: string; description: string }>>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
   tags: jsonb('tags').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   category: varchar('category', { length: 50 }).default('utilities'),
   author: varchar('author', { length: 255 }),
   /** Extra user-provided config fields (e.g., API keys, tokens) */
   extraConfig: jsonb('extra_config').$type<Record<string, string>>(),
   /** Metadata about extra config fields (help URLs, input types) */
-  extraConfigMeta: jsonb('extra_config_meta').$type<Record<string, { helpUrl?: string; type?: string }>>(),
+  extraConfigMeta:
+    jsonb('extra_config_meta').$type<Record<string, { helpUrl?: string; type?: string }>>(),
   /** Documentation URL */
   docUrl: text('doc_url'),
   /** Repository URL */
@@ -81,7 +88,7 @@ export const mcpStars = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [unique('mcp_stars_mcp_user_idx').on(t.mcpId, t.userId)],
+  (t) => [unique('mcp_stars_mcp_user_idx').on(t.mcpId, t.userId)]
 );
 
 // ---------------------------------------------------------------------------
@@ -109,5 +116,5 @@ export const mcpUserInstalls = pgTable(
     }>(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [unique('mcp_user_installs_mcp_user_idx').on(t.mcpId, t.userId)],
+  (t) => [unique('mcp_user_installs_mcp_user_idx').on(t.mcpId, t.userId)]
 );

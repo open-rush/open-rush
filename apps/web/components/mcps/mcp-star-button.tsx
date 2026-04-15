@@ -10,7 +10,12 @@ interface McpStarButtonProps {
   size?: 'sm' | 'md';
 }
 
-export function McpStarButton({ mcpId, initialCount, initialStarred = false, size = 'sm' }: McpStarButtonProps) {
+export function McpStarButton({
+  mcpId,
+  initialCount,
+  initialStarred = false,
+  size = 'sm',
+}: McpStarButtonProps) {
   const [starred, setStarred] = useState(initialStarred);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
@@ -42,11 +47,16 @@ export function McpStarButton({ mcpId, initialCount, initialStarred = false, siz
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); void toggle(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        void toggle();
+      }}
       className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 ${textSize} transition-all duration-200 hover:scale-105 active:scale-95 ${starred ? 'font-medium text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-400'}`}
       aria-label={starred ? '取消收藏' : '收藏'}
     >
-      <StarIcon className={`${iconSize} transition-all duration-200 ${starred ? 'fill-current' : ''}`} />
+      <StarIcon
+        className={`${iconSize} transition-all duration-200 ${starred ? 'fill-current' : ''}`}
+      />
       <span className="tabular-nums">{count}</span>
     </button>
   );

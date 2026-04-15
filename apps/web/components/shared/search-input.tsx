@@ -24,7 +24,7 @@ export function SearchInput({
       setLocalValue(e.target.value);
       if (!composing) onChange(e.target.value);
     },
-    [composing, onChange],
+    [composing, onChange]
   );
 
   return (

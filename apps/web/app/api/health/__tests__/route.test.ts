@@ -19,7 +19,7 @@ describe('GET /api/health', () => {
   async function importAndCall() {
     // Re-import to pick up fresh env
     const mod = await import('../route.js');
-    const response = await mod.GET();
+    const response = await mod.GET(new Request('http://localhost/api/health'));
     return response.json();
   }
 

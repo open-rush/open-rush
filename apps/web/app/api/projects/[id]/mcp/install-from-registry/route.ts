@@ -41,13 +41,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   // 2. Merge user config into server config template variables
-  const serverConfig = body.userConfig && typeof body.userConfig === 'object'
-    ? mergeExtraConfigIntoServerConfig(
-        registryMcp.transportType,
-        registryMcp.serverConfig,
-        body.userConfig as Record<string, string>,
-      )
-    : registryMcp.serverConfig;
+  const serverConfig =
+    body.userConfig && typeof body.userConfig === 'object'
+      ? mergeExtraConfigIntoServerConfig(
+          registryMcp.transportType,
+          registryMcp.serverConfig,
+          body.userConfig as Record<string, string>
+        )
+      : registryMcp.serverConfig;
 
   // 3. Install into project via existing McpRegistry
   const mcpRegistry = new McpRegistry(new DrizzleMcpStore(db));
@@ -67,9 +68,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // 4. Record install
   await registryService.install(body.mcpId, userId, body.userConfig);
 
-  return apiSuccess({
-    installed: true,
-    mcpName: registryMcp.name,
-    projectId,
-  }, 201);
+  return apiSuccess(
+    {
+      installed: true,
+      mcpName: registryMcp.name,
+      projectId,
+    },
+    201
+  );
 }

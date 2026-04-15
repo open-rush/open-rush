@@ -48,7 +48,7 @@ export default function McpServersPage() {
         setServers(
           json.data.items.map((item: Record<string, unknown>) => ({
             id: item.id as string,
-            name: item.displayName as string || item.name as string,
+            name: (item.displayName as string) || (item.name as string),
             transport: item.transportType as string,
             command: (item.serverConfig as Record<string, unknown>)?.command as string,
             url: (item.serverConfig as Record<string, unknown>)?.url as string,
@@ -61,23 +61,32 @@ export default function McpServersPage() {
             isStarred: item.isStarred as boolean,
             isInstalled: item.isInstalled as boolean,
             category: item.category as string,
-          })),
+          }))
         );
         setTotal(json.data.total);
       }
-    } catch { /* silent */ } finally {
+    } catch {
+      /* silent */
+    } finally {
       setLoading(false);
     }
   }, [limit, offset, sortBy, search, transportFilter, categoryFilter]);
 
-  useEffect(() => { void loadServers(); }, [loadServers]);
-
-  const handleDelete = useCallback(async (mcp: McpItem) => {
-    try {
-      await fetch(`/api/mcps/${mcp.id}`, { method: 'DELETE' });
-      void loadServers();
-    } catch { /* silent */ }
+  useEffect(() => {
+    void loadServers();
   }, [loadServers]);
+
+  const handleDelete = useCallback(
+    async (mcp: McpItem) => {
+      try {
+        await fetch(`/api/mcps/${mcp.id}`, { method: 'DELETE' });
+        void loadServers();
+      } catch {
+        /* silent */
+      }
+    },
+    [loadServers]
+  );
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -86,16 +95,29 @@ export default function McpServersPage() {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">MCP Servers</h1>
-            <p className="mt-1 text-sm text-muted-foreground">浏览和管理 MCP 服务器，用于扩展 AI 能力</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              浏览和管理 MCP 服务器，用于扩展 AI 能力
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => void loadServers()} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+            <button
+              type="button"
+              onClick={() => void loadServers()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"
+            >
               <RefreshCwIcon className="h-4 w-4" /> Sync
             </button>
-            <Link href="/mcps/stars" className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+            <Link
+              href="/mcps/stars"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"
+            >
               <StarIcon className="h-4 w-4" /> My Stars
             </Link>
-            <button type="button" onClick={() => setShowRegister(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+            <button
+              type="button"
+              onClick={() => setShowRegister(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
               <PlusIcon className="h-4 w-4" /> Register MCP
             </button>
           </div>
@@ -103,14 +125,35 @@ export default function McpServersPage() {
 
         {/* Filters */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <SearchInput placeholder="搜索 MCP Servers..." value={search} onChange={(v) => { setSearch(v); setOffset(0); }} />
-          <select value={transportFilter} onChange={(e) => { setTransportFilter(e.target.value); setOffset(0); }} className="h-9 rounded-lg border-0 bg-muted px-3 text-sm shadow-none hover:bg-muted/80 focus-visible:outline-none transition-all">
+          <SearchInput
+            placeholder="搜索 MCP Servers..."
+            value={search}
+            onChange={(v) => {
+              setSearch(v);
+              setOffset(0);
+            }}
+          />
+          <select
+            value={transportFilter}
+            onChange={(e) => {
+              setTransportFilter(e.target.value);
+              setOffset(0);
+            }}
+            className="h-9 rounded-lg border-0 bg-muted px-3 text-sm shadow-none hover:bg-muted/80 focus-visible:outline-none transition-all"
+          >
             <option value="all">All Transports</option>
             <option value="stdio">Stdio</option>
             <option value="sse">SSE</option>
             <option value="http">HTTP</option>
           </select>
-          <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setOffset(0); }} className="h-9 rounded-lg border-0 bg-muted px-3 text-sm shadow-none hover:bg-muted/80 focus-visible:outline-none transition-all">
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              setSortBy(e.target.value);
+              setOffset(0);
+            }}
+            className="h-9 rounded-lg border-0 bg-muted px-3 text-sm shadow-none hover:bg-muted/80 focus-visible:outline-none transition-all"
+          >
             <option value="updated_at">Latest</option>
             <option value="star_count">Most Stars</option>
             <option value="name">Name</option>
@@ -120,7 +163,15 @@ export default function McpServersPage() {
         {/* Category filter */}
         <div className="mb-6 flex flex-wrap gap-1.5">
           {MCP_CATEGORIES.map((cat) => (
-            <button key={cat.value} type="button" onClick={() => { setCategoryFilter(cat.value); setOffset(0); }} className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${categoryFilter === cat.value ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}>
+            <button
+              key={cat.value}
+              type="button"
+              onClick={() => {
+                setCategoryFilter(cat.value);
+                setOffset(0);
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${categoryFilter === cat.value ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
+            >
               {cat.label}
             </button>
           ))}
@@ -128,25 +179,55 @@ export default function McpServersPage() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex h-[320px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+          <div className="flex h-[320px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
         ) : servers.length === 0 ? (
           <div className="flex h-[320px] flex-col items-center justify-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted"><RssIcon className="h-6 w-6 text-muted-foreground" /></div>
-            <h3 className="text-sm font-medium">{search || transportFilter !== 'all' || categoryFilter !== 'all' ? '没有找到匹配的 MCP Servers' : '还没有注册 MCP Servers'}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">点击 Register MCP 添加新的 MCP 服务器</p>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <RssIcon className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-sm font-medium">
+              {search || transportFilter !== 'all' || categoryFilter !== 'all'
+                ? '没有找到匹配的 MCP Servers'
+                : '还没有注册 MCP Servers'}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              点击 Register MCP 添加新的 MCP 服务器
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
-            {servers.map((mcp) => <McpListItem key={mcp.id} mcp={mcp} onDelete={handleDelete} onClick={(m) => setDetailId(m.id)} />)}
+            {servers.map((mcp) => (
+              <McpListItem
+                key={mcp.id}
+                mcp={mcp}
+                onDelete={handleDelete}
+                onClick={(m) => setDetailId(m.id)}
+              />
+            ))}
           </div>
         )}
 
         {total > limit && (
-          <ListPagination total={total} limit={limit} offset={offset} onPageChange={setOffset} onLimitChange={(l) => { setLimit(l); setOffset(0); }} />
+          <ListPagination
+            total={total}
+            limit={limit}
+            offset={offset}
+            onPageChange={setOffset}
+            onLimitChange={(l) => {
+              setLimit(l);
+              setOffset(0);
+            }}
+          />
         )}
       </div>
 
-      <RegisterMcpModal open={showRegister} onClose={() => setShowRegister(false)} onSuccess={() => void loadServers()} />
+      <RegisterMcpModal
+        open={showRegister}
+        onClose={() => setShowRegister(false)}
+        onSuccess={() => void loadServers()}
+      />
       <McpDetailModal mcpId={detailId} onClose={() => setDetailId(null)} />
     </div>
   );

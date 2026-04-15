@@ -38,7 +38,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 async function fetchSkillMdFromSourceUrl(
   sourceUrl: string,
-  sourceType?: string,
+  sourceType?: string
 ): Promise<string | null> {
   try {
     const rawUrl = sourceUrlToSkillMdRawUrl(sourceUrl, sourceType);

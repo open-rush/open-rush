@@ -1,6 +1,13 @@
 'use client';
 
-import { CheckIcon, CopyIcon, LockIcon, PuzzleIcon, ToggleLeftIcon, ToggleRightIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  CopyIcon,
+  LockIcon,
+  PuzzleIcon,
+  ToggleLeftIcon,
+  ToggleRightIcon,
+} from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 export interface SkillItem {
@@ -35,7 +42,7 @@ export function SkillCard({ skill, onToggle, onClick }: SkillCardProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     },
-    [installCmd],
+    [installCmd]
   );
 
   return (
@@ -108,7 +115,11 @@ export function SkillCard({ skill, onToggle, onClick }: SkillCardProps) {
           onClick={handleCopy}
           className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         >
-          {copied ? <CheckIcon className="h-3.5 w-3.5 text-green-500" /> : <CopyIcon className="h-3.5 w-3.5" />}
+          {copied ? (
+            <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+          ) : (
+            <CopyIcon className="h-3.5 w-3.5" />
+          )}
         </button>
       </div>
 
