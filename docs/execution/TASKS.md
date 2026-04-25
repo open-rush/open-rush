@@ -91,7 +91,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
 
 ## M2: Registry API
 
-- [ ] `task-7-service-agent-definition` — **Agent-A**
+- [x] `task-7-service-agent-definition` — **Agent-A**
       域: `packages/control-plane/src/agent-definition-service.ts` + 测试
       依赖: task-1, task-4
       验收:
