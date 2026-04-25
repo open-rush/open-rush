@@ -145,7 +145,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
       - 单测覆盖幂等 + 版本绑定 + 状态迁移
       - verify: `./docs/execution/verify.sh task-11`
 
-- [ ] `task-12-api-v1-agents` — **Agent-B**
+- [x] `task-12-api-v1-agents` — **Agent-B**
       域: `apps/web/app/api/v1/agents/*`
       依赖: task-5, task-7, task-11
       验收:
