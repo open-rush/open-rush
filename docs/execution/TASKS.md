@@ -65,7 +65,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
       - 同步生成 OpenAPI 基础(可后置到 task-15 完善)
       - verify: `./docs/execution/verify.sh task-4`
 
-- [ ] `task-5-unified-auth-middleware` — **Agent-0**
+- [x] `task-5-unified-auth-middleware` — **Agent-0**
       域: `apps/web/lib/auth/unified-auth.ts`, `apps/web/lib/auth/unified-auth.test.ts`
       依赖: task-2
       验收:
