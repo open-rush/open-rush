@@ -1,6 +1,7 @@
 import {
   type AnyPgColumn,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -32,6 +33,18 @@ export const tasks = pgTable(
     activeRunId: uuid('active_run_id').references((): AnyPgColumn => runs.id, {
       onDelete: 'set null',
     }),
+    /**
+     * AgentDefinition version this Agent (task) is bound to.
+     *
+     * Nullable at the DB level — enforced at the application layer:
+     * AgentService.create() in task-7 will verify that
+     * `(task.agent_id, definition_version)` exists in
+     * `agent_definition_versions`. See
+     * specs/agent-definition-versioning.md §tasks 表.
+     *
+     * NOT a composite FK to avoid cross-table constraint complexity.
+     */
+    definitionVersion: integer('definition_version'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

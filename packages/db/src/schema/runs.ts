@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
   index,
@@ -38,6 +39,25 @@ export const runs = pgTable(
     maxRetries: integer('max_retries').notNull().default(3),
     errorMessage: text('error_message'),
     attachmentsJson: jsonb('attachments_json'),
+    /**
+     * AgentDefinition version snapshot the run is bound to.
+     * Derived from `tasks.definition_version` at run creation; nullable to
+     * keep existing rows/tests writable during the migration window, but new
+     * rows inserted via RunService (task-11) MUST set this.
+     * See specs/agent-definition-versioning.md §runs 表.
+     */
+    agentDefinitionVersion: integer('agent_definition_version'),
+    /**
+     * Idempotency-Key header value for `POST /api/v1/agents/:id/runs`. NOT
+     * globally UNIQUE — 24h window enforcement is an application-layer
+     * concern (see specs/managed-agents-api.md §幂等性).
+     */
+    idempotencyKey: varchar('idempotency_key', { length: 255 }),
+    /**
+     * SHA-256(canonical JSON body) used to detect "same key, different body"
+     * → 409 IDEMPOTENCY_CONFLICT. 64 hex chars.
+     */
+    idempotencyRequestHash: varchar('idempotency_request_hash', { length: 64 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
     startedAt: timestamp('started_at', { withTimezone: true }),
@@ -48,5 +68,12 @@ export const runs = pgTable(
     index('runs_task_id_idx').on(t.taskId),
     index('runs_conversation_id_idx').on(t.conversationId),
     index('runs_parent_run_id_idx').on(t.parentRunId),
+    // Lookup index for idempotency 24h window queries.
+    // NOT UNIQUE — avoids "permanent conflict" semantics; 24h window is
+    // enforced at the application layer (see specs/managed-agents-api.md
+    // §幂等性 §实现).
+    index('runs_idempotency_lookup_idx')
+      .on(t.idempotencyKey, sql`${t.createdAt} DESC`)
+      .where(sql`${t.idempotencyKey} IS NOT NULL`),
   ]
 );

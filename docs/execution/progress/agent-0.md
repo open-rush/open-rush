@@ -35,3 +35,23 @@
   - 0010 snapshot 的 prevId 正好等于 0009 snapshot 的 id,链完整
   - `drizzle-kit generate` 确认无 drift("nothing to migrate")
 - **验证结果**: `pnpm build/check/lint/test` 全绿;`./docs/execution/verify.sh task-2` PASS(87 个 db 测试通过,service-tokens filter 真正生效)。
+
+## task-3 Schema runs extension + tasks.definition_version
+- **状态**: ✅ 完成,等待合并
+- **分支**: `feat/task-3`
+- **文件域**: `packages/db/src/schema/runs.ts`、`packages/db/src/schema/tasks.ts`、`packages/db/drizzle/0011_runs_versioning_idempotency.sql`(新,drizzle-kit 生成后手工加回填 SQL)、`packages/db/test/pglite-helpers.ts`、`packages/control-plane/src/__tests__/drizzle-{event-store,run-db}.test.ts`、`packages/db/src/__tests__/runs-extension.test.ts`(新)
+- **字段**:
+  - tasks.definition_version `integer`(nullable,应用层强校验,不落 DB 组合 FK)
+  - runs.agent_definition_version `integer`(nullable 以兼容回填,新 run 由 RunService 在 task-11 填)
+  - runs.idempotency_key `varchar(255)`
+  - runs.idempotency_request_hash `varchar(64)`
+- **索引**:
+  - `runs_idempotency_lookup_idx` partial index on `runs(idempotency_key, created_at DESC) WHERE idempotency_key IS NOT NULL`
+  - 明确不做 UNIQUE,避免"永久冲突"语义(24h 窗口由应用层保证)
+- **回填 SQL**(三段):
+  1. `UPDATE tasks SET definition_version = 1 WHERE agent_id IS NOT NULL AND definition_version IS NULL`
+  2. `UPDATE runs SET agent_definition_version = t.definition_version FROM tasks t WHERE runs.task_id = t.id AND runs.agent_definition_version IS NULL`
+  3. `UPDATE runs SET agent_definition_version = a.current_version FROM agents a WHERE runs.agent_id = a.id AND runs.agent_definition_version IS NULL`(兜底)
+- **测试覆盖**:字段默认/nullable、idempotency_key 非 UNIQUE(允许重复 insert)、latest-first 查询、24h 窗口断言、partial index predicate 文本、三段回填 SQL 正确性(含 no agent_id / no task_id 兜底),以及(task_id, definition_version)一致性由应用层保证、DB 不做约束。
+- **同步更新 control-plane pglite 测试 helper**:加 3 个新字段到 runs DDL,否则 DrizzleRunDb 插入会失败。
+- **验证结果**:`pnpm build/check/lint/test` 全绿;`./docs/execution/verify.sh task-3` PASS(101 个 db 测试,runs filter 生效)。

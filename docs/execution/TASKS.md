@@ -43,7 +43,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
       - unit test 覆盖 revocation + expiry 查询
       - verify: `./docs/execution/verify.sh task-2`
 
-- [ ] `task-3-schema-runs-extension` — **Agent-0**
+- [x] `task-3-schema-runs-extension` — **Agent-0**
       域: `packages/db/src/schema/runs.ts`, `packages/db/drizzle/*.sql`, `packages/db/src/schema/tasks.ts` (加 definition_version)
       依赖: 无
       验收:

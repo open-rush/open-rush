@@ -226,6 +226,7 @@ async function applySchema(db: TestDb): Promise<void> {
       handoff_summary TEXT,
       head_run_id UUID,
       active_run_id UUID,
+      definition_version INTEGER,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
@@ -281,6 +282,9 @@ async function applySchema(db: TestDb): Promise<void> {
       max_retries INTEGER NOT NULL DEFAULT 3,
       error_message TEXT,
       attachments_json JSONB,
+      agent_definition_version INTEGER,
+      idempotency_key VARCHAR(255),
+      idempotency_request_hash VARCHAR(64),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       started_at TIMESTAMPTZ,
@@ -292,6 +296,12 @@ async function applySchema(db: TestDb): Promise<void> {
   `);
   await db.execute(sql`
     CREATE INDEX IF NOT EXISTS runs_conversation_id_idx ON runs (conversation_id)
+  `);
+  // Partial index mirroring 0011 migration; used by the idempotency 24h
+  // window lookup in RunService (task-11).
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS runs_idempotency_lookup_idx
+    ON runs (idempotency_key, created_at DESC) WHERE idempotency_key IS NOT NULL
   `);
   await db
     .execute(sql`
