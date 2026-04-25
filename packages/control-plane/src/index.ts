@@ -1,5 +1,21 @@
 export * from './admin/index.js';
 export * from './agent/index.js';
+export {
+  type AgentDefinition,
+  AgentDefinitionArchivedError,
+  type AgentDefinitionEditable,
+  AgentDefinitionNotFoundError,
+  AgentDefinitionService,
+  AgentDefinitionVersionConflictError,
+  AgentDefinitionVersionNotFoundError,
+  type AgentDefinitionVersionSummary,
+  type CreateAgentDefinitionInput,
+  EmptyAgentDefinitionPatchError,
+  InvalidAgentDefinitionInputError,
+  type ListVersionsOptions,
+  type ListVersionsResult,
+  type PatchAgentDefinitionInput,
+} from './agent-definition-service.js';
 export * from './auth/index.js';
 export * from './conversation/index.js';
 export * from './deploy/index.js';
