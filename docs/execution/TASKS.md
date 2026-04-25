@@ -34,7 +34,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
       - unit test 覆盖 version 唯一约束 + FK cascade
       - verify: `./docs/execution/verify.sh task-1`
 
-- [ ] `task-2-schema-service-tokens` — **Agent-0**
+- [x] `task-2-schema-service-tokens` — **Agent-0**
       域: `packages/db/src/schema/service-tokens.ts`, `packages/db/drizzle/*.sql`
       依赖: 无
       验收:

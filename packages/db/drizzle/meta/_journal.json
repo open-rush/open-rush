@@ -75,8 +75,8 @@
     {
       "idx": 10,
       "version": "7",
-      "when": 1777125758368,
-      "tag": "0010_chemical_namorita",
+      "when": 1777126641925,
+      "tag": "0010_service_tokens",
       "breakpoints": true
     }
   ]

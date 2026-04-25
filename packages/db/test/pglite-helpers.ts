@@ -18,6 +18,7 @@ const TABLE_NAMES = [
   'project_agents',
   'agent_definition_versions',
   'agents',
+  'service_tokens',
   'project_members',
   'projects',
   'sessions',
@@ -89,6 +90,33 @@ async function applySchema(db: TestDb): Promise<void> {
       expires_at TIMESTAMPTZ NOT NULL,
       PRIMARY KEY (identifier, token)
     )
+  `);
+
+  // Service tokens (machine-to-machine auth for /api/v1/*)
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS service_tokens (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      token_hash TEXT NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      owner_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      scopes JSONB NOT NULL DEFAULT '[]'::jsonb,
+      last_used_at TIMESTAMPTZ,
+      expires_at TIMESTAMPTZ,
+      revoked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS service_tokens_token_hash_uniq
+    ON service_tokens (token_hash)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS service_tokens_owner_idx
+    ON service_tokens (owner_user_id)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS service_tokens_active_idx
+    ON service_tokens (token_hash) WHERE revoked_at IS NULL
   `);
 
   // Projects

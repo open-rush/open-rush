@@ -13,6 +13,7 @@ export { runCheckpoints } from './run-checkpoints.js';
 export { runEvents } from './run-events.js';
 export { runs } from './runs.js';
 export { sandboxes } from './sandboxes.js';
+export { serviceTokens } from './service-tokens.js';
 export { sessions } from './sessions.js';
 export {
   skillGroupMembers,

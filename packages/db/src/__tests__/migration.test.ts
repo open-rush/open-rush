@@ -72,6 +72,45 @@ describe('migration replay on clean database', () => {
     expect(tables).toContain('sandboxes');
     expect(tables).toContain('vault_entries');
     expect(tables).toContain('agent_definition_versions');
+    expect(tables).toContain('service_tokens');
+  });
+
+  it('service_tokens partial active index exists with correct predicate', async () => {
+    const pg = new PGlite();
+    try {
+      const files = readdirSync(DRIZZLE_DIR)
+        .filter((f) => f.endsWith('.sql'))
+        .sort();
+      for (const file of files) {
+        const sqlContent = readFileSync(resolve(DRIZZLE_DIR, file), 'utf-8');
+        const statements = sqlContent
+          .split('--> statement-breakpoint')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        for (const stmt of statements) {
+          await pg.exec(stmt);
+        }
+      }
+
+      const result = await pg.query<{ indexname: string; indexdef: string }>(
+        `SELECT indexname, indexdef
+         FROM pg_indexes
+         WHERE schemaname = 'public' AND tablename = 'service_tokens'`
+      );
+      const idxs = result.rows;
+      const activeIdx = idxs.find((r) => r.indexname === 'service_tokens_active_idx');
+      expect(activeIdx).toBeDefined();
+      expect(activeIdx?.indexdef).toMatch(/revoked_at IS NULL/i);
+
+      const uniqIdx = idxs.find((r) => r.indexname === 'service_tokens_token_hash_uniq');
+      expect(uniqIdx).toBeDefined();
+      expect(uniqIdx?.indexdef).toMatch(/UNIQUE/i);
+
+      const ownerIdx = idxs.find((r) => r.indexname === 'service_tokens_owner_idx');
+      expect(ownerIdx).toBeDefined();
+    } finally {
+      await pg.close();
+    }
   });
 
   it('agents table gains current_version/archived_at via 0009 migration', async () => {

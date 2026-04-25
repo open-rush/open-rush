@@ -12,6 +12,7 @@ import {
   runEvents,
   runs,
   sandboxes,
+  serviceTokens,
   sessions,
   tasks,
   users,
@@ -24,6 +25,7 @@ const ALL_TABLES = {
   accounts,
   sessions,
   verificationTokens,
+  serviceTokens,
   projects,
   projectAgents,
   projectMembers,
@@ -44,6 +46,7 @@ describe('schema table names', () => {
     accounts: 'accounts',
     sessions: 'sessions',
     verificationTokens: 'verification_tokens',
+    serviceTokens: 'service_tokens',
     projects: 'projects',
     projectAgents: 'project_agents',
     projectMembers: 'project_members',
@@ -65,9 +68,23 @@ describe('schema table names', () => {
   }
 });
 
-describe('schema test tracks 16 core tables', () => {
-  it('has exactly 16 tracked tables', () => {
-    expect(Object.keys(ALL_TABLES)).toHaveLength(16);
+describe('schema test tracks 17 core tables', () => {
+  it('has exactly 17 tracked tables', () => {
+    expect(Object.keys(ALL_TABLES)).toHaveLength(17);
+  });
+});
+
+describe('service_tokens column shape', () => {
+  it('exposes token_hash, name, owner_user_id, scopes, timestamps', () => {
+    const cols = Object.keys(getTableColumns(serviceTokens));
+    expect(cols).toContain('tokenHash');
+    expect(cols).toContain('name');
+    expect(cols).toContain('ownerUserId');
+    expect(cols).toContain('scopes');
+    expect(cols).toContain('lastUsedAt');
+    expect(cols).toContain('expiresAt');
+    expect(cols).toContain('revokedAt');
+    expect(cols).toContain('createdAt');
   });
 });
 
