@@ -76,7 +76,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
       - 明文 token 不进日志
       - verify: `./docs/execution/verify.sh task-5`
 
-- [ ] `task-6-api-v1-auth-tokens` — **Agent-0**(收尾 M1)
+- [x] `task-6-api-v1-auth-tokens` — **Agent-0**(收尾 M1)
       域: `apps/web/app/api/v1/auth/tokens/*`, service(复用 Agent-0 已有 util)
       依赖: task-5
       验收:
