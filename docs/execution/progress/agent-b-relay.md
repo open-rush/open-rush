@@ -56,12 +56,99 @@ Worktree: `/tmp/agent-wt/b`(branch `feat/task-12` 起步,task-13/14 各切独立
 - **definitionVersion 必须非 null**:legacy row 没 version → 400 + hint 让客户端 recreate(task-11 保证新 row 有)。
 - **IdempotencyConflictError → 409 IDEMPOTENCY_CONFLICT**:service 层 throw,route 用 `mapRunServiceError` 捕获并映射。
 
-## task-14(待做)
+## task-14(交接给下一任 relay)
 
-- 文件域: `apps/web/app/api/v1/agents/[agentId]/runs/[runId]/events/route.ts`
-- SSE text/event-stream, 仅 Last-Event-ID, 每条事件带 `id: <seq>`
-- replay `run_events WHERE seq > N ORDER BY seq`
-- 活跃 run → 订阅 StreamRegistry Redis live;已结束 → replay 完后 close
+Context 已在 task-13 Sparring 5 轮后推到 70% 红线,task-14 SSE + Redis + replay 复杂度留给新 session。
+
+### 文件域
+- **新增**: `apps/web/app/api/v1/agents/[agentId]/runs/[runId]/events/route.ts`(+ test)
+- **禁改**: 其他
+
+### 依赖与参考
+- task-10 merged(`packages/control-plane/src/drizzle-event-store.ts` 有 `appendAssignSeq` + seq 分配)
+- task-13 merged(PR #152 等 merge 后 rebase)
+- StreamRegistry API: `packages/stream/src/stream-registry.ts`(publish / resume / exists)
+- Spec: `specs/managed-agents-api.md §断线重连` + §事件写入单写者模型
+
+### 合约(已就绪,task-4 已定义)
+- `v1.lastEventIdHeaderSchema` — `z.coerce.number().int().min(0)`
+- `v1.runEventSseFrameSchema` — `{ id: number, data: runEventPayloadSchema }`
+- `v1.runEventPayloadSchema` — UIMessageChunk ∪ openrush extensions discriminated union
+
+### 关键设计要点
+1. **协议**:Content-Type: text/event-stream + Cache-Control: no-cache;每条事件三行:`id: <seq>\ndata: <json>\n\n`
+2. **Last-Event-ID header**:仅支持 header,不支持 query cursor(spec §断线重连 明确单一协议)
+3. **流程**:
+   ```
+   auth + scope + 404/403 检查(参考 task-13 [runId]/route.ts)
+   parse Last-Event-ID 为 N(缺省 0)
+   如果 run 已终结(completed/failed/finalized) → replay from seq>N 完后 close
+   否则(活跃 run) → replay from seq>N,然后订阅 StreamRegistry live
+   ```
+4. **replay SQL**: 用 `DrizzleEventStore.readByRun(runId, { afterSeq: N })` 或类似 reader(task-10 应该有)。事件本身是 `run_events` 表,按 seq 顺序读
+5. **StreamRegistry**:`registry.resume(streamId, fromId?)` 能直接给你 replay + live 合一的流;看 task-10 代码怎么用的
+6. **关键不变式**:
+   - `id: <seq>` 必须出现在每条(客户端 EventSource 自动记忆)
+   - 结束 run 发完 replay 就关连接(不能挂住)
+   - 活跃 run 的 live 事件也带 `id`
+7. **Scope**: `runs:read`
+8. **Cross-agent probing**:同 task-13,run.taskId !== URL agentId → 404
+
+### 实现骨架参考
+```typescript
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ agentId: string; runId: string }> }
+) {
+  // 1. auth + scope + 参数校验 + run + task + project 校验(复用 task-13 runs/[runId]/route.ts 前半段)
+  // 2. parse Last-Event-ID:
+  const headerRaw = request.headers.get('last-event-id') ?? request.headers.get('Last-Event-ID');
+  const lastEventId = headerRaw ? v1.lastEventIdHeaderSchema.safeParse(headerRaw) : { success: true, data: 0 };
+  if (!lastEventId.success) return v1ValidationError(lastEventId.error);
+  const fromSeq = lastEventId.data;
+
+  // 3. 构造 ReadableStream(web streams)
+  const stream = new ReadableStream({
+    async start(controller) {
+      const enc = new TextEncoder();
+      // replay
+      const events = await eventStore.readByRun(runId, { afterSeq: fromSeq });
+      for (const ev of events) {
+        controller.enqueue(enc.encode(`id: ${ev.seq}\ndata: ${JSON.stringify(ev.payload)}\n\n`));
+      }
+      // 活跃 run → subscribe live
+      if (run.status in [terminal set]) {
+        controller.close();
+      } else {
+        const unsub = streamRegistry.subscribe(runId, (ev) => {
+          controller.enqueue(enc.encode(`id: ${ev.seq}\ndata: ${JSON.stringify(ev.payload)}\n\n`));
+        });
+        request.signal.addEventListener('abort', () => {
+          unsub();
+          controller.close();
+        });
+      }
+    }
+  });
+  return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } });
+}
+```
+
+(上面是示意;具体 API 以 StreamRegistry 实际 signature 为准,task-10 已经有消费样例)
+
+### 测试策略
+- 单测用 ReadableStream 的 reader 逐条读,断言 `id: N\ndata: {...}` 格式
+- mock StreamRegistry 模拟 live 事件推送
+- 覆盖:auth/scope/404/403/Last-Event-ID 解析/空 replay/结束 run replay-only close/活跃 run replay+live/abort 断连
+
+### 不要踩的坑
+- 别用 Response.json,用手动拼接 SSE 帧
+- Last-Event-ID 无效或超大数值要容错(clamp 或 400)
+- 订阅 cleanup 必须在 request.signal abort 时执行,否则内存泄漏
+- Next.js route handler 对长连接 OK,但要用 `export const runtime = 'nodejs'`(edge runtime 不支持 pg 客户端 + Redis)
+
+### 重要:task-9 vault 失败不是你的锅
+rebase 到含 task-9 的 main 后跑 `pnpm test` 会看到 `app/api/v1/vaults/entries/vaults.integration.test.ts` 5 个失败(`resolved.service.findById is not a function`)。**这在干净的 origin/main 上也失败**,是 task-9(PR #149)的遗留 bug,跟 task-14 无关。如果 verify.sh 因此红,跟 team-lead 确认一下是否 waive,或等 Agent-A-relay 先修。
 
 ## 给后续 relay 的坑
 
