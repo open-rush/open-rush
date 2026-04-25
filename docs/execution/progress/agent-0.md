@@ -55,3 +55,25 @@
 - **测试覆盖**:字段默认/nullable、idempotency_key 非 UNIQUE(允许重复 insert)、latest-first 查询、24h 窗口断言、partial index predicate 文本、三段回填 SQL 正确性(含 no agent_id / no task_id 兜底),以及(task_id, definition_version)一致性由应用层保证、DB 不做约束。
 - **同步更新 control-plane pglite 测试 helper**:加 3 个新字段到 runs DDL,否则 DrizzleRunDb 插入会失败。
 - **验证结果**:`pnpm build/check/lint/test` 全绿;`./docs/execution/verify.sh task-3` PASS(101 个 db 测试,runs filter 生效)。
+
+## task-4 Contracts /api/v1/* Zod types(关键里程碑)
+- **状态**: ✅ 完成,等待合并
+- **分支**: `feat/task-4`
+- **文件域**: `packages/contracts/src/v1/*`(新子目录 8 文件 + 7 测试文件 + index barrel)、`packages/contracts/src/index.ts` re-export。
+- **组织策略**:按 endpoint 功能分 7 个文件 + 1 个 common:`common / auth / agent-definitions / agents / runs / vaults / registry / projects`。index.ts re-export + 根 index 用 `export * as v1 from './v1/index.js'` 命名空间化,避免和内部 schema 同名冲突(如 Run、Project 在内外层都存在)。
+- **关键决策**:
+  - **AI SDK UIMessagePart 不 import `ai` 包**:spec 写的是 `@ai-sdk/ui-utils`,实际在本仓库这个 tag 下是 `ai` 包。直接加 `ai` 依赖会把 React 等重依赖拖进 contracts(contracts 是 sdk / agent-worker / control-plane 的共同依赖)。改用结构兼容的 Zod schema 定义(`text / reasoning / step-start / tool-* / source-url / file / data-*`),运行时由 Zod 做 shape 验证,编译时消费方按需 `import type { UIMessagePart } from 'ai'`。此决策在 runs.ts 文件里写了长注释说明原因。
+  - **Open-rush 扩展事件 discriminated union**:4 个字面量 type(`data-openrush-run-started/run-done/usage/sub-run`),精确 payload。`runEventPayloadSchema` 里 generic `data-*` 用 refine 拒绝 `data-openrush-*` 前缀,防止扩展事件 shape 被泛型 generic 吞掉(测试里专门断言)。
+  - **pagination 用 `coerce.number` + 默认 50**;cursor opaque 字符串;response 带 `nextCursor: string | null`(spec 明确是 nullable)。
+  - **ServiceTokenScope 枚举不含 `'*'`**:强制在 schema 层面拒绝 Service Token 声明 `*`,避免后续 API handler 需要额外过滤。额外导出 `AuthScope = ServiceTokenScope | '*'` 用于中间件 AuthContext。
+  - **错误 code 枚举严格 8 个**,并导出 `ERROR_CODE_HTTP_STATUS` 常量映射给 route handler 用。
+  - **PATCH body refine**:要求至少一个可编辑字段(`changeNote` 单独不算),避免 no-op PATCH 产生版本号递增。
+  - **If-Match header** 用独立 `ifMatchHeaderSchema`(coerce → positive int)。**Idempotency-Key header** 用独立 `idempotencyKeyHeaderSchema`(≤255 URL-safe),对齐 0011 migration 的 `varchar(255)` 列宽。
+  - **deleteAgentResponseSchema 的 status 用 `z.literal('cancelled')`**,契约上锁死 DELETE 只能返回 cancelled 状态。
+  - **createVaultEntryRequestSchema** 用 refine 约束 `(scope, projectId)` 组合合法性,在 schema 层面就拒绝非法组合。
+- **测试覆盖**:8 个测试文件共 355 tests,每个 schema 都有 happy + 错误路径。重点覆盖:scope `*` 拒绝、幂等 key 格式、SSE 事件 data-openrush-* 前缀保护、vault `(scope, projectId)` refine、PATCH no-op 拒绝、SSE id ≥ 1、分页 nextCursor 必传。
+- **不包含**:OpenAPI 生成(按 team-lead 指示跳过,留 task-15);实际 hash 计算 / 中间件逻辑(task-5/11)。
+- **验证结果**:`pnpm build/check/lint/test` 全绿;`./docs/execution/verify.sh task-4` PASS(355 contracts tests + 全量 test 正常)。
+
+## M1 Milestone
+所有 task-1/2/3/4 完成后,M1(Foundation)结束。Agent-A (M2) 和 Agent-B (M3) 可并行启动。

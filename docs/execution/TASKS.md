@@ -54,7 +54,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
       - 对齐 specs/managed-agents-api.md §幂等性 + specs/agent-definition-versioning.md §初次 migration
       - verify: `./docs/execution/verify.sh task-3`
 
-- [ ] `task-4-contracts-v1` — **Agent-0**
+- [x] `task-4-contracts-v1` — **Agent-0**
       域: `packages/contracts/src/v1/*.ts`, `packages/contracts/src/index.ts` re-export
       依赖: task-1, task-2, task-3
       验收:
