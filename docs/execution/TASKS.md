@@ -164,7 +164,7 @@ Source of truth 见 `.claude/plans/managed-agents-p0-p1.md`。本文件仅用于
       - 已完成/已取消 Agent 禁止新 run → 409
       - verify: `./docs/execution/verify.sh task-13`
 
-- [ ] `task-14-api-v1-events-sse` — **Agent-B**
+- [x] `task-14-api-v1-events-sse` — **Agent-B**
       域: `apps/web/app/api/v1/agents/[agentId]/runs/[runId]/events/*`
       依赖: task-10, task-13
       验收:
