@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { fetchAllV1 } from '@/lib/api/v1-list';
 
 interface ProjectSummary {
   id: string;
@@ -131,17 +132,17 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
     setLoading(true);
     setError(null);
     try {
-      const [agentsRes, skillsRes, mcpRes] = await Promise.all([
-        fetch(`/api/agents?projectId=${selectedProjectId}`),
+      const [nextAgents, skillsRes, mcpRes] = await Promise.all([
+        // v1: paginated GET /api/v1/agent-definitions?projectId=X — follow cursor
+        // so large projects don't get silently truncated.
+        fetchAllV1<Agent>(`/api/v1/agent-definitions?projectId=${selectedProjectId}`, {
+          limit: 100,
+        }),
         fetch(`/api/projects/${selectedProjectId}/skills`).catch(() => null),
         fetch(`/api/projects/${selectedProjectId}/mcp`).catch(() => null),
       ]);
 
-      const agentsJson = await agentsRes.json();
-      if (!agentsRes.ok) {
-        throw new Error(agentsJson.error ?? 'Failed to load agents');
-      }
-      setAgents((agentsJson.data ?? []) as Agent[]);
+      setAgents(nextAgents);
 
       if (skillsRes?.ok) {
         const skillsJson = await skillsRes.json();
@@ -191,6 +192,10 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
     setMessage(null);
     setError(null);
     try {
+      // TODO(task-19 Step 2 / follow-up): migrate create/update to v1
+      // (POST|PATCH /api/v1/agent-definitions/[:id]). Blocker: v1 contract
+      // requires `providerType` + `model`; current form doesn't collect
+      // them. See PR §scope for the follow-up plan.
       const isEdit = !!editingAgentId;
       const res = await fetch(isEdit ? `/api/agents/${editingAgentId}` : '/api/agents', {
         method: isEdit ? 'PATCH' : 'POST',
@@ -219,6 +224,12 @@ export function AgentStudioClient({ projects }: AgentStudioClientProps) {
       setMessage(null);
       setError(null);
       try {
+        // TODO(task-19 Step 2): migrate to POST /api/v1/agent-definitions/:id/archive.
+        // Blocker: legacy DELETE also rebinds `projects.currentAgentId` if the removed
+        // agent was current (apps/web/app/api/agents/[id]/route.ts:117-130); v1 archive
+        // only sets `archivedAt` and doesn't touch project binding, so doing it here
+        // would leave the UI referencing an archived definition. Step 2 must add the
+        // rebind step (via /api/projects/:id/agent) or extend v1 archive.
         const res = await fetch(`/api/agents/${agentId}`, { method: 'DELETE' });
         const json = await res.json();
         if (!res.ok) {

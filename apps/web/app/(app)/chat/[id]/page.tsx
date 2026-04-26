@@ -90,8 +90,11 @@ export default function ChatPage() {
     };
 
     Promise.all([
+      // v1: GET /api/v1/agent-definitions/:id → { data: { providerType, ... } }
       agentId
-        ? fetch(`/api/agents/${encodeURIComponent(agentId)}`).then((r) => (r.ok ? r.json() : null))
+        ? fetch(`/api/v1/agent-definitions/${encodeURIComponent(agentId)}`).then((r) =>
+            r.ok ? r.json() : null
+          )
         : null,
       fetch('/api/health').then((r) => (r.ok ? r.json() : null)),
     ])
@@ -118,89 +121,99 @@ export default function ChatPage() {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const consumeRunStream = useCallback(async (runId: string, afterSeq: number) => {
-    // Always end any in-flight stream first. A previous run can hold the connection for minutes
-    // (server polls run_events); without this, new sends / heartbeat resume no-op.
-    streamAbortRef.current?.abort();
-    const ac = new AbortController();
-    streamAbortRef.current = ac;
-    currentRunIdRef.current = runId;
+  const consumeRunStream = useCallback(
+    async (runId: string, afterSeq: number) => {
+      // Always end any in-flight stream first. A previous run can hold the connection for minutes
+      // (server polls run_events); without this, new sends / heartbeat resume no-op.
+      streamAbortRef.current?.abort();
+      const ac = new AbortController();
+      streamAbortRef.current = ac;
+      currentRunIdRef.current = runId;
 
-    setStatus('streaming');
-    const assistantId = `asst-${runId}`;
+      setStatus('streaming');
+      const assistantId = `asst-${runId}`;
 
-    try {
-      const headers: Record<string, string> = {};
-      if (afterSeq >= 0) {
-        headers['Last-Event-ID'] = String(afterSeq);
-      }
+      try {
+        const headers: Record<string, string> = {};
+        if (afterSeq >= 0) {
+          headers['Last-Event-ID'] = String(afterSeq);
+        }
 
-      const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/stream`, {
-        signal: ac.signal,
-        headers,
-      });
+        // v1 SSE: /api/v1/agents/:agentId/runs/:runId/events
+        // The `agentId` here = v1 Agent (legacy `taskId`); URL requires it as parent.
+        const parentAgentId = taskId;
+        if (!parentAgentId) throw new Error('Missing parent Agent (taskId) for SSE stream');
+        const res = await fetch(
+          `/api/v1/agents/${encodeURIComponent(parentAgentId)}/runs/${encodeURIComponent(runId)}/events`,
+          {
+            signal: ac.signal,
+            headers,
+          }
+        );
 
-      if (!res.ok) {
-        throw new Error(`Stream failed: ${res.status}`);
-      }
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error('No response body');
+        if (!res.ok) {
+          throw new Error(`Stream failed: ${res.status}`);
+        }
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error('No response body');
 
-      for await (const ev of readRunSseStream(reader)) {
-        if (ev.done) {
-          sessionStorage.removeItem(seqStorageKey(runId));
+        for await (const ev of readRunSseStream(reader)) {
+          if (ev.done) {
+            sessionStorage.removeItem(seqStorageKey(runId));
+            if (currentRunIdRef.current === runId) {
+              setStatus('ready');
+            }
+            break;
+          }
+
+          // Check for run-level error events
+          const streamErr = isStreamError(ev.payload);
+          if (streamErr) {
+            setError(new Error(streamErr));
+            setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+            setStatus('error');
+            continue;
+          }
+
+          lastEventSeqRef.current = ev.seq;
+          sessionStorage.setItem(seqStorageKey(runId), String(ev.seq));
+          setMessages((prev) => {
+            const idx = prev.findIndex((m) => m.id === assistantId);
+            const curText =
+              idx >= 0 && prev[idx].parts[0]?.type === 'text' ? prev[idx].parts[0].text : '';
+            const nextText = applyAssistantTextChunk(curText, ev.payload);
+            if (idx === -1) {
+              return [
+                ...prev,
+                {
+                  id: assistantId,
+                  role: 'assistant',
+                  parts: [{ type: 'text', text: nextText }],
+                },
+              ];
+            }
+            const cur = prev[idx];
+            const next = [...prev];
+            next[idx] = {
+              ...cur,
+              parts: [{ type: 'text', text: nextText }],
+            };
+            return next;
+          });
+        }
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') {
           if (currentRunIdRef.current === runId) {
             setStatus('ready');
           }
-          break;
-        }
-
-        // Check for run-level error events
-        const streamErr = isStreamError(ev.payload);
-        if (streamErr) {
-          setError(new Error(streamErr));
-          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        } else {
+          setError(e instanceof Error ? e : new Error(String(e)));
           setStatus('error');
-          continue;
         }
-
-        lastEventSeqRef.current = ev.seq;
-        sessionStorage.setItem(seqStorageKey(runId), String(ev.seq));
-        setMessages((prev) => {
-          const idx = prev.findIndex((m) => m.id === assistantId);
-          const curText =
-            idx >= 0 && prev[idx].parts[0]?.type === 'text' ? prev[idx].parts[0].text : '';
-          const nextText = applyAssistantTextChunk(curText, ev.payload);
-          if (idx === -1) {
-            return [
-              ...prev,
-              {
-                id: assistantId,
-                role: 'assistant',
-                parts: [{ type: 'text', text: nextText }],
-              },
-            ];
-          }
-          const cur = prev[idx];
-          const next = [...prev];
-          next[idx] = {
-            ...cur,
-            parts: [{ type: 'text', text: nextText }],
-          };
-          return next;
-        });
       }
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') {
-        if (currentRunIdRef.current === runId) {
-          setStatus('ready');
-        }
-      } else {
-        setError(e instanceof Error ? e : new Error(String(e)));
-        setStatus('error');
-      }
-    }
-  }, []);
+    },
+    [taskId]
+  );
 
   const consumeRunStreamRef = useRef(consumeRunStream);
   consumeRunStreamRef.current = consumeRunStream;
@@ -249,51 +262,35 @@ export default function ChatPage() {
       ]);
 
       try {
-        const res = await fetch('/api/runs', {
+        // v1: POST /api/v1/agents/:agentId/runs (parent = v1 Agent, i.e. legacy taskId).
+        // v1 allows concurrent runs on an Agent; the legacy "409 with activeRunId"
+        // retry path is dropped. A terminal Agent (completed/cancelled) returns
+        // 409 VERSION_CONFLICT — surfaced below.
+        const res = await fetch(`/api/v1/agents/${encodeURIComponent(taskId)}/runs`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: text,
-            projectId,
-            taskId,
-            conversationId,
-            ...(agentId ? { agentId } : {}),
-          }),
+          headers: {
+            'Content-Type': 'application/json',
+            // Idempotency-Key: give the same send a 24h dedupe window so accidental
+            // double-click doesn't spawn duplicate runs. See specs §幂等性.
+            'Idempotency-Key': crypto.randomUUID(),
+          },
+          body: JSON.stringify({ input: text }),
         });
 
         const body = (await res.json()) as {
-          success?: boolean;
-          data?: { runId?: string; activeRunId?: string };
+          data?: { id?: string };
+          error?: { code?: string; message?: string };
         };
 
-        if (res.status === 409) {
-          const activeRunId = body.data?.activeRunId;
+        if (!res.ok || !body.data?.id) {
+          const msg = body.error?.message ?? `Failed to create run (HTTP ${res.status})`;
           setMessages((prev) => prev.filter((m) => m.id !== userMsgId && m.id !== 'pending-asst'));
-          setStatus('ready');
-          setError(new Error('该任务已有进行中的运行，正在尝试附着…'));
-          if (activeRunId) {
-            const rr = await fetch(`/api/runs/${encodeURIComponent(activeRunId)}`).then((r) =>
-              r.json()
-            );
-            if (rr.success && rr.data?.id) {
-              clearError();
-              const run = rr.data as { id: string; prompt: string };
-              setMessages((prev) => buildRecoveryMessages(prev, run));
-              const raw = sessionStorage.getItem(seqStorageKey(run.id));
-              const parsed = raw === null ? -1 : Number.parseInt(raw, 10);
-              const afterSeq = Number.isNaN(parsed) ? -1 : parsed;
-              lastEventSeqRef.current = afterSeq;
-              void consumeRunStreamRef.current(run.id, afterSeq);
-            }
-          }
+          setStatus('error');
+          setError(new Error(msg));
           return;
         }
 
-        if (!res.ok || !body.success || !body.data?.runId) {
-          throw new Error('无法创建运行');
-        }
-
-        const runId = body.data.runId;
+        const runId = body.data.id;
         currentRunIdRef.current = runId;
         setMessages((prev) =>
           prev.map((m) => (m.id === 'pending-asst' ? { ...m, id: `asst-${runId}` } : m))
@@ -307,19 +304,21 @@ export default function ChatPage() {
         setStatus('error');
       }
     },
-    [projectId, taskId, conversationId, agentId, clearError]
+    [projectId, taskId, clearError]
   );
 
   const stopRun = useCallback(async () => {
     streamAbortRef.current?.abort();
     const rid = currentRunIdRef.current;
-    if (rid) {
-      await fetch(`/api/runs/${encodeURIComponent(rid)}/abort`, {
-        method: 'POST',
-      }).catch(() => {});
+    if (rid && taskId) {
+      // v1: POST /api/v1/agents/:agentId/runs/:runId/cancel (parent = v1 Agent = taskId).
+      await fetch(
+        `/api/v1/agents/${encodeURIComponent(taskId)}/runs/${encodeURIComponent(rid)}/cancel`,
+        { method: 'POST' }
+      ).catch(() => {});
     }
     setStatus('ready');
-  }, []);
+  }, [taskId]);
 
   const loadedConvRef = useRef<string | null>(null);
   useEffect(() => {
@@ -354,16 +353,19 @@ export default function ChatPage() {
         return;
       }
 
-      const tr = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`).then((r) => r.json());
-      if (cancelled || !tr.success || !tr.data?.activeRunId) {
+      // v1: GET /api/v1/agents/:id (task = v1 Agent). Envelope is `{ data }`.
+      const tr = await fetch(`/api/v1/agents/${encodeURIComponent(taskId)}`).then((r) => r.json());
+      if (cancelled || !tr.data?.activeRunId) {
         setMessages(loaded);
         return;
       }
 
-      const runRes = await fetch(`/api/runs/${encodeURIComponent(tr.data.activeRunId)}`).then((r) =>
-        r.json()
-      );
-      if (cancelled || !runRes.success || !runRes.data?.id) {
+      const activeRunId: string = tr.data.activeRunId;
+      // v1: GET /api/v1/agents/:agentId/runs/:runId.
+      const runRes = await fetch(
+        `/api/v1/agents/${encodeURIComponent(taskId)}/runs/${encodeURIComponent(activeRunId)}`
+      ).then((r) => r.json());
+      if (cancelled || !runRes.data?.id) {
         setMessages(loaded);
         return;
       }

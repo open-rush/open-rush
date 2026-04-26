@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { fetchAllV1 } from '@/lib/api/v1-list';
 
 interface AgentOption {
   id: string;
@@ -61,13 +62,17 @@ export default function HomePage() {
         const projectList = (projectsJson.data ?? []) as Array<{ id: string; name: string }>;
         const agentResponses = await Promise.all(
           projectList.map(async (project) => {
-            const response = await fetch(`/api/agents?projectId=${project.id}`);
-            const json = await response.json();
-            if (!response.ok) {
-              throw new Error(json.error ?? `Failed to load agents for ${project.name}`);
-            }
+            // v1: GET /api/v1/agent-definitions?projectId=X&limit=N&cursor=... —
+            // paginated. Follow cursor so we don't silently truncate projects
+            // that have more than one page of agents.
+            const rows = await fetchAllV1<AgentOption>(
+              `/api/v1/agent-definitions?projectId=${project.id}`,
+              { limit: 100 }
+            ).catch((err: Error) => {
+              throw new Error(err.message || `Failed to load agents for ${project.name}`);
+            });
 
-            return ((json.data ?? []) as AgentOption[]).map((agent) => ({
+            return rows.map((agent) => ({
               ...agent,
               projectId: project.id,
               projectName: project.name,

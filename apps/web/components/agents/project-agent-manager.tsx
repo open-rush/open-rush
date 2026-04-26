@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { MultiSelectOption } from '@/components/ui/multi-select';
+import { fetchAllV1 } from '@/lib/api/v1-list';
 
 interface ProjectAgentManagerProps {
   projectId: string;
@@ -50,24 +51,21 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const [agentsRes, currentRes, skillsRes, mcpRes] = await Promise.all([
-        fetch(`/api/agents?projectId=${projectId}`),
+      const [nextAgents, currentRes, skillsRes, mcpRes] = await Promise.all([
+        // v1: paginated GET /api/v1/agent-definitions?projectId=X — follow cursor.
+        fetchAllV1<Agent>(`/api/v1/agent-definitions?projectId=${projectId}`, {
+          limit: 100,
+        }),
         fetch(`/api/projects/${projectId}/agent`),
         fetch(`/api/projects/${projectId}/skills`).catch(() => null),
         fetch(`/api/projects/${projectId}/mcp`).catch(() => null),
       ]);
 
-      const agentsJson = await agentsRes.json();
       const currentJson = await currentRes.json();
-
-      if (!agentsRes.ok) {
-        throw new Error(agentsJson.error ?? 'Failed to load agents');
-      }
       if (!currentRes.ok) {
         throw new Error(currentJson.error ?? 'Failed to load current agent');
       }
 
-      const nextAgents = (agentsJson.data ?? []) as Agent[];
       const nextCurrentAgent = (currentJson.data?.currentAgent ?? null) as Agent | null;
       const nextBinding = (currentJson.data?.binding ?? null) as ProjectAgent | null;
 
@@ -134,6 +132,9 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
     setMessage(null);
     setError(null);
     try {
+      // TODO(task-19 Step 2 / follow-up): migrate create/update to v1
+      // (POST|PATCH /api/v1/agent-definitions/[:id]). Blocker: v1 contract
+      // requires `providerType` + `model`; current form doesn't collect them.
       const url = selectedAgentId ? `/api/agents/${selectedAgentId}` : '/api/agents';
       const method = selectedAgentId ? 'PATCH' : 'POST';
       const res = await fetch(url, {
@@ -191,6 +192,10 @@ export function ProjectAgentManager({ projectId }: ProjectAgentManagerProps) {
       setMessage(null);
       setError(null);
       try {
+        // TODO(task-19 Step 2): migrate to POST /api/v1/agent-definitions/:id/archive.
+        // Blocker: legacy DELETE rebinds project.currentAgentId on removal
+        // (apps/web/app/api/agents/[id]/route.ts:117-130); v1 archive doesn't.
+        // Step 2 must add the rebind step or extend v1 archive before deleting legacy.
         const res = await fetch(`/api/agents/${agentId}`, { method: 'DELETE' });
         const json = await res.json();
         if (!res.ok) {
