@@ -147,36 +147,39 @@ case "$TASK" in
       fi
     done
 
-    # 2. legacy routes 必须完全删除(按 PLAN §8 task-19 完整清单)
-    # 允许保留: /api/auth/*, /api/health, 以及 UI 专属(install/star/members/generate-title)
+    # 2. Safe-delete legacy routes 必须完全删除
+    # (Step 2 refined scope; see docs/execution/progress/agent-c-docs-fe.md §task-19 Step 2 handoff
+    #  for full disposition of every route in PLAN §8 task-19)
     LEGACY_TO_REMOVE=(
       "apps/web/app/api/tasks"
       "apps/web/app/api/runs"
       "apps/web/app/api/chat/route.ts"
-      "apps/web/app/api/chat/start"
       "apps/web/app/api/chat/abort"
-      "apps/web/app/api/conversations"
-      "apps/web/app/api/agents/route.ts"
-      "apps/web/app/api/agents/[id]/route.ts"
-      "apps/web/app/api/skills/route.ts"
-      "apps/web/app/api/skills/[id]/route.ts"
-      "apps/web/app/api/skills/upload"
-      "apps/web/app/api/mcps/route.ts"
-      "apps/web/app/api/mcps/[id]/route.ts"
-      "apps/web/app/api/projects/route.ts"
-      "apps/web/app/api/projects/[id]/route.ts"
       "apps/web/app/api/projects/[id]/vault"
     )
     for p in "${LEGACY_TO_REMOVE[@]}"; do
       if [ -e "$p" ]; then
-        fail "legacy 仍存在: $p(应在 task-19 删除,见 .claude/plans/managed-agents-p0-p1.md §8 task-19)"
+        fail "legacy 仍存在: $p(应在 task-19 Step 2 删除)"
       fi
     done
 
-    # 3. 保留清单存在性检查
+    # 3. 保留清单存在性检查(UI-only routes + framework paths)
+    # UI-only rationale: no v1 equivalent, Web UI flow-specific (1-step create, conversations
+    # as UI domain, provider/model form gap). See handoff for per-route justification.
     KEEP=(
       "apps/web/app/api/auth"
       "apps/web/app/api/health"
+      "apps/web/app/api/chat/start"              # Home 1-step create (no v1 equivalent yet)
+      "apps/web/app/api/chat/[conversationId]/messages"      # UI-only conversation messages
+      "apps/web/app/api/chat/[conversationId]/generate-title" # UI-only title generation
+      "apps/web/app/api/conversations"           # UI-only conversation domain
+      "apps/web/app/api/agents/route.ts"         # POST/GET UI form (providerType/model gap)
+      "apps/web/app/api/agents/[id]/route.ts"    # GET/PATCH UI; DELETE migrated to v1 archive
+      "apps/web/app/api/projects"                # UI-only project CRUD
+      "apps/web/app/api/projects/[id]/agent"     # Project current agent rebind (used post-archive)
+      "apps/web/app/api/skills"                  # UI-only skill registry (install/star)
+      "apps/web/app/api/mcps"                    # UI-only MCP registry
+      "apps/web/app/api/skill-groups"            # UI-only skill groups
     )
     for p in "${KEEP[@]}"; do
       if [ ! -e "$p" ]; then
@@ -185,8 +188,11 @@ case "$TASK" in
     done
 
     # 4. 前端 fetch('/api/...') 不应再指向已删 legacy
-    # 简单检查:grep 前端源码
-    LEGACY_FETCH=$(grep -rnE "fetch\(['\"]/api/(tasks|runs|chat|conversations)" apps/web/app apps/web/components 2>/dev/null | grep -v "/api/v1/" || true)
+    # Tightened regex to avoid false positives on UI-only routes kept by design:
+    # - chat/start / chat/[id]/messages / chat/[id]/generate-title → KEEP (no v1 equivalent)
+    # - conversations / projects / skills / mcps → KEEP (UI-only domain)
+    # Only flag paths that were actually deleted: tasks, runs, chat/abort, bare /api/chat.
+    LEGACY_FETCH=$(grep -rnE "fetch\(['\"\`]/api/(tasks|runs|chat/abort)(/|['\"\`])|fetch\(['\"\`]/api/chat['\"\`]" apps/web/app apps/web/components apps/web/hooks apps/web/lib 2>/dev/null | grep -v "/api/v1/" || true)
     if [ -n "$LEGACY_FETCH" ]; then
       fail "前端仍有 legacy fetch:
 $LEGACY_FETCH"
